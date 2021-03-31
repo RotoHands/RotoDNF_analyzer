@@ -13,11 +13,14 @@ from trainer import Trainer, get_new_moves
 import msvcrt as m
 import pyperclip
 import socket
+import kociemba
+
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
 import json
 class DNFanalyzer:
     def __init__(self):
+        self.facelet_moves = ""
         self.fail_reason = ""
         self.frame_rate = 0
         self.url = ""
@@ -191,6 +194,7 @@ def moves_to_string(moves):
         st += m + " "
     return st
 async def reset_scramble(Cube, trainer):
+    Cube.facelet_moves = ""
     Cube.resetCube()
     Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
     Cube.alg.executeAlg()
@@ -205,22 +209,28 @@ async def reset_scramble(Cube, trainer):
     await Cube.send_ui("scramble", Cube.scrambleToExe)  # add this to websocket
     Cube.scramble_moves = []
 
-async def get_state(Cube, trainer):
-    trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
-    value = trainer.state_data
+def get_facelet_strnig(value):
     state = []
     for i in range(0, len(value) - 2, 3):
         face = value[i ^ 1] << 16 | value[i + 1 ^ 1] << 8 | value[i + 2 ^ 1]
-        for j in range (21, -1, -3):
+        for j in range(21, -1, -3):
             state.append("URFDLB"[face >> j & 0x7])
             if (j == 12):
                 state.append("URFDLB"[int(i / 3)])
 
-
     latestFacelet = "".join(state)
-    print(latestFacelet)
-    movesFromLastCheck = 0
     return latestFacelet
+async def get_state(Cube, trainer):
+    trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
+    value = trainer.state_data
+    print(trainer.last_state_string)
+    if value != trainer.last_state_data:
+        current_state = get_facelet_strnig(value)
+        Cube.facelet_moves += " " + kociemba.solve(trainer.last_state_string, current_state)
+        await Cube.send_ui("facelet", Cube.facelet_moves)  # add this to websocket
+        trainer.last_state_data = value
+        trainer.last_state_string = current_state
+
 async def scramble_cube(Cube, trainer):
 
     print("hereeee")
@@ -230,9 +240,8 @@ async def scramble_cube(Cube, trainer):
     #     pass
     trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
     trainer.data_move_counter = trainer.data[12]
-
-
-
+    trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
+    trainer.last_state_string = get_facelet_strnig(trainer.state_data)
 
     await Cube.send_ui("msg", "scramble")
     await Cube.send_ui("scramble",Cube.scrambleToExe) # add this to websocket

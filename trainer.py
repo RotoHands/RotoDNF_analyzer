@@ -62,7 +62,8 @@ class Trainer:
         self.chrct_uuid_f5 = '0000fff5-0000-1000-8000-00805f9b34fb'
         self.chrct_uuid_f2 = "0000fff2-0000-1000-8000-00805f9b34fb"
         self.state_data = None
-
+        self.last_state_data = None
+        self.last_state_string = ""
     def reset_alg(self):
 
         if self.use_recognize:

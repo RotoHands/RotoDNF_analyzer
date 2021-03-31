@@ -1,29 +1,14 @@
-import socket
-import numpy
-import cv2
-def test_play():
-    cap = cv2.VideoCapture(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\RotoDNF_analyzer\Videos\134.mkv')
+import pygatt
 
-    while (cap.isOpened()):
-        ret, frame = cap.read()
+# The BGAPI backend will attempt to auto-discover the serial device name of the
+# attached BGAPI-compatible USB adapter.
+adapter = pygatt.GATTToolBackend()
+CHRCT_UUID_READ = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+addrs = "ec:6a:31:5b:17:2d"
 
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-def init_ws(ip, port):
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((ip, port))
-
-    client.send(bytearray(str(123),'utf-8'))
-    print(client.recv(1024).decode('utf-8'))
-    a = input("press enter to finish")
-    client.send(bytearray("STOP", 'utf-8'))
-
-def main():
-    test_play()
-if __name__ == '__main__':
-    main()
+try:
+    adapter.start()
+    device = adapter.connect(addrs)
+    value = device.char_read(CHRCT_UUID_READ)
+finally:
+    adapter.stop()
