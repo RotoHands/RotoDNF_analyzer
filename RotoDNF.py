@@ -1,16 +1,92 @@
+from decode_gan import aes128, decData
+from bleak import BleakClient
 import openpyxl
 import keyboard
+import websockets
 import webbrowser
 from  algClass import Alg
 import os
 import subprocess
-import pyautogui
 import time
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-import numpy as np
-import cv2
-import time
+import asyncio
+from trainer import Trainer, get_new_moves
+import msvcrt as m
+import pyperclip
+import socket
+### Setup!!! ###
+exeOrder = "EdgesCorners"
+import json
+class DNFanalyzer:
+    def __init__(self):
+        self.fail_reason = ""
+        self.frame_rate = 0
+        self.url = ""
+        self.alg = Alg("")
+        self.scrambleToExe = ""
+        self.scrambleApplied = ""
+        self.scramble = True
+        self.memo = False
+        self.solving = False
+        self.startMemoTime = time.time()
+        self.memoTime = time.time()
+        self.startExeTime = time.time()
+        self.exeTime = time.time()
+        self.Recon = ""
+        self.secMistake = 0.0
+        self.success = False
+        self.solveTime = 0
+        self.exeMoves = []#[move, time, cornersSolved, edgesSolved, index]
+        self.scrambleRow = 0
+        self.parity = False
+        self.solveNum = 0
+        self.solution = ""
+        self.moveWrong = 0
+        self.ws_rec = None
+        self.ws_rec_ip = "127.0.0.1"
+        self.ws_rec_port = 12345
+        self.ws_play = None
+        self.ws_play_ip = "127.0.0.1"
+        self.ws_play_port = 12321
+        self.ws_ui = None
+        self.video_time = 0
+        self.scramble_moves = []
+
+    def resetCube(self):
+        self.solving = False
+        self.moves = []
+        self.moveNumber = 0
+        self.alg.reset()
+        self.moveNumber = 0
+        self.exeMoves = []
+        self.scrambleToExe = getScramble(self)
+        self.scrambleApplied = ""
+        self.scramble = True
+        self.solving = False
+        self.secMistake = 0.0
+        self.startMemoTime = time.time()
+        self.memoTime = time.time()
+        self.startExeTime = time.time()
+        self.exeTime = time.time()
+        self.success = False
+        self.rawSol = []
+        self.mostPiecesSolved = 0
+        self.solution = ""
+        self.moveWrong = 0
+
+    async def send_ui(self, field, msg):
+        data_to_ui = json.dumps({field:msg})
+        await self.ws_ui.send(data_to_ui)
+    def wait(self):
+        while(not keyboard.is_pressed(' ')):
+            pass
+
+def init_ws(ip, port):
+    time.sleep(2)
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((ip, port))
+    return client
+
+
 
 def url(Cube, scramble):#gen url of solve to algcubing
     sol = str(Cube.solution)
@@ -41,93 +117,20 @@ def url(Cube, scramble):#gen url of solve to algcubing
     newSol+="%0A"
     return newSol
 
-
-
-
-
 def playVid(Cube):#play video of so;ve from the sec of mistake
-    f = open('playVid.txt', 'w')
-    f.write(str(Cube.secMistake))
-    f.close()
-    os.system('playVid.py')
 
-### Setup!!! ###
-exeOrder = "EdgesCorners"
+    subprocess.Popen(["python", 'playVid.py'])
 
-class DNFanalyzer:
-    alg = Alg("")
-    scrambleToExe = ""
-    scrambleApplied = ""
-    scramble = True
-    memo = False
-    solving = False
-    startMemoTime = time.time()
-    memoTime = time.time()
-    startExeTime = time.time()
-    exeTime = time.time()
-    Recon = ""
-    secMistake = 0.0
-    success = False
-    solveTime = 0
-    exeMoves = []#[move, time, cornersSolved, edgesSolved, index]
-    scrambleRaw = 0
-    parity = False
-    solveNum = 0
-    solution = ""
-    moveWrong = 0
-
-def saveSolve(Cube):#save results to excel
-    memo = Cube.memoTime
-    exce = Cube.exeTime
-    all = memo + exce
-
-    isSolved = Cube.alg.checkSolved()
-    succsses = ""
-    print("all: ", all, ", memo: ", memo, ", exe: ", exce)
-    a = input("Solved? (y/n)")#make sure the result is right
-    if(a == "y"):
-        succsses = "yes"
-        Cube.secMistake = 0.0
-    else:
-        succsses = "no"
-    row = Cube.scrambleRaw
-
-    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
-    ws = wb["RotoStats"]
-    strRow = str(Cube.scrambleRaw)
-    ws.cell(row, 3).value = round(memo,2)
-    ws.cell(row, 4).value = round(exce,2)
-    ws.cell(row, 5).value = round(all,2)
-    ws.cell(row, 6).value = round(Cube.secMistake, 2)
-    ws.cell(row, 7).value = succsses
-    ws.cell(row,10).value = url(Cube,ws.cell(row,1).value)
-    #ws.cell(row, 8).value = "=HYPERLINK(" + "\"C:\Python\PythonWork\BLD\RotoBLD\RotoDNF\\videos\solve" + strRow +".avi\""+", "+"\"solve"+strRow+"\")"
-    ws.cell(row, 9).value =  Cube.solution
-    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
-
-def resetCube(Cube):
-    Cube.solving = False
-    Cube.moves = []
-    Cube.moveNumber = 0
-    Cube.alg.reset()
-    Cube.moveNumber = 0
-    Cube.exeMoves = []
-    Cube.scrambleToExe = getScramble(Cube)
-    Cube.scrambleApplied = ""
-    Cube.scramble = True
-    Cube.solving = False
-    Cube.secMistake = 0.0
-    Cube.startMemoTime = time.time()
-    Cube.memoTime = time.time()
-    Cube.startExeTime = time.time()
-    Cube.exeTime = time.time()
-    Cube.success = False
-    Cube.rawSol = []
-    Cube.mostPiecesSolved = 0
-    Cube.solution = ""
-    Cube.moveWrong = 0
+    Cube.ws_play = init_ws(Cube.ws_play_ip, Cube.ws_play_port)
+    Cube.ws_play.recv(1024).decode('utf-8')
+    Cube.ws_play.send(bytearray(str("{}:{}:{}:{}".format("%.2f"%Cube.secMistake, Cube.scrambleRow, Cube.frame_rate, Cube.video_time)), 'utf-8'))
 
 
+    data = Cube.ws_play.recv(1024).decode('utf-8')
+    if data != "finish":
+        data_split = data.split(":")
+        Cube.secMistake = int(float(data_split[0]))
+        Cube.fail_reason = data_split[1]
 def getScramble(Cube):# returns Cube object of scramble
 
     wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
@@ -137,20 +140,40 @@ def getScramble(Cube):# returns Cube object of scramble
         i+=1
     ws.cell(i,2).value = "yes"
     wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
-    Cube.scrambleRaw = i
-    numSolve = open('vidNum.txt', 'w')
-    numSolve.write(str(Cube.scrambleRaw))
-    numSolve.close()
+    Cube.scrambleRow = i
     Cube.scrambleApplied = ws.cell(i,1).value
     return ws.cell(i,1).value
 
+def saveSolve(Cube):#save results to excel
+    memo = Cube.memoTime
+    exce = Cube.exeTime
+    all = memo + exce
+    print("all: ", all, ", memo: ", memo, ", exe: ", exce)
+    a = input("Solved? (y/n)")#make sure the result is right
+    if(a == "y"):
+        succsses = "yes"
+        Cube.secMistake = 0.0
+    else:
+        succsses = "no"
+    row = Cube.scrambleRow
 
+    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
+    ws = wb["RotoStats"]
+    strRow = str(Cube.scrambleRow)
+    ws.cell(row, 3).value = round(memo,2)
+    ws.cell(row, 4).value = round(exce,2)
+    ws.cell(row, 5).value = round(all,2)
+    ws.cell(row, 6).value = round(Cube.secMistake, 2)
+    ws.cell(row, 7).value = succsses
 
-def findNewMoves(lastMoves, currentMoves):#get last moves done
-    lastLen = len(lastMoves)
-    if (lastLen != len(currentMoves)):
-        return currentMoves[lastLen:]
-    return []
+    ws.cell(row,10).value = url(Cube,ws.cell(row,1).value)
+    print(Cube.fail_reason)
+    ws.cell(row,11).value = Cube.fail_reason
+    Cube.url = ws.cell(row,10).value
+    pyperclip.copy(Cube.url)
+    #ws.cell(row, 8).value = "=HYPERLINK(" + "\"C:\Python\PythonWork\BLD\RotoBLD\RotoDNF\\videos\solve" + strRow +".avi\""+", "+"\"solve"+strRow+"\")"
+    ws.cell(row, 9).value =  Cube.solution
+    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
 def takeCorners(elem):
     return elem[2]
 
@@ -160,124 +183,146 @@ def takeIndex(elem):
     return elem[4]
 def takeTime(elem):
     return elem[1]
-def initTimer(browser):# i use csTimer because the gan 356i is encrypted and i didn't managed to solve it in python, so i just use cs
-    browser.get("https://cstimer.net")
-    pyautogui.click(42, 160)  # options
-    time.sleep(1)
-    pyautogui.click(313, 400)  # timer
-    time.sleep(1)
-    pyautogui.click(436, 413)  # timer
-    time.sleep(1)
-    pyautogui.click(443, 511)  # giiker
-    time.sleep(8)
-    pyautogui.click(588, 146)  # GAN
-    time.sleep(1)
-    pyautogui.click(616, 487)  # OK
-    time.sleep(12)
-    pyautogui.click(431, 189)  # accecpt
-    time.sleep(3)
-    pyautogui.rightClick(431, 189)
-    time.sleep(1)
-    pyautogui.click(369, 420)
-    time.sleep(2)
-    pyautogui.click(664, 141)  # console
-    time.sleep(2)
-    pyautogui.click(539, 681)  # console
-    pyautogui.write('console.clear()')
-    time.sleep(0.5)
-    pyautogui.press('enter')
-    time.sleep(0.5)
-    pyautogui.write("giikerutil")
-    time.sleep(0.5)
-    pyautogui.press('enter')
-    time.sleep(0.5)
-    pyautogui.click(526, 265)
-    time.sleep(0.5)
-    pyautogui.click(540, 367)
-    time.sleep(0.5)
-    pyautogui.click(551, 496)
-    time.sleep(0.5)
-    pyautogui.click(560, 510)
-    time.sleep(0.5)
-    pyautogui.scroll(-500)
-    time.sleep(0.5)
-    pyautogui.rightClick(589, 584)
-    time.sleep(0.5)
-    pyautogui.click(500, 658)
-    time.sleep(0.5)
-    pyautogui.click(39, 113)
-    time.sleep(0.5)
-    return browser
 
-def initCube():
-    browser1 = webdriver.Chrome(ChromeDriverManager().install())
-    browser = initTimer(browser1)
-    movesList = ["U", "U2", "U'", "R", "R2", "R'", "F", "F2", "F'", "D", "D2", "D'", "L", "L2", "L'", "B", "B2", "B'"]
-    lastMoves = []
-    script = "return temp1"
+
+def moves_to_string(moves):
+    st = ""
+    for m in moves:
+        st += m + " "
+    return st
+async def reset_scramble(Cube, trainer):
+    Cube.resetCube()
+    Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
+    Cube.alg.executeAlg()
+    Cube.alg.reverseSelf()
+    await Cube.send_ui("msg", "press space when cube is solved")  # add this to websocket
+    Cube.wait()
+    # while (not keyboard.is_pressed(' ') == False):
+    #     pass
+    trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
+    trainer.data_move_counter = trainer.data[12]
+    await Cube.send_ui("msg", "scramble")
+    await Cube.send_ui("scramble", Cube.scrambleToExe)  # add this to websocket
+    Cube.scramble_moves = []
+
+async def get_state(Cube, trainer):
+    trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
+    value = trainer.state_data
+    state = []
+    for i in range(0, len(value) - 2, 3):
+        face = value[i ^ 1] << 16 | value[i + 1 ^ 1] << 8 | value[i + 2 ^ 1]
+        for j in range (21, -1, -3):
+            state.append("URFDLB"[face >> j & 0x7])
+            if (j == 12):
+                state.append("URFDLB"[int(i / 3)])
+
+
+    latestFacelet = "".join(state)
+    print(latestFacelet)
+    movesFromLastCheck = 0
+    return latestFacelet
+async def scramble_cube(Cube, trainer):
+
+    print("hereeee")
+    await Cube.send_ui("msg","press space when cube is solved") # add this to websocket
+    Cube.wait()
+    # while (not keyboard.is_pressed(' ') == False):
+    #     pass
+    trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
+    trainer.data_move_counter = trainer.data[12]
+
+
+
+
+    await Cube.send_ui("msg", "scramble")
+    await Cube.send_ui("scramble",Cube.scrambleToExe) # add this to websocket
+    Cube.scramble_moves = []
+    while (Cube.scramble):  # Scramble Cube
+        if (keyboard.is_pressed('q')):
+            await reset_scramble(Cube,trainer)
+        trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
+        trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
+        await get_state(Cube,trainer)
+        if (trainer.new_moves):
+            newM = trainer.new_moves
+            trainer.new_moves.reverse()
+            trainer.moves += trainer.new_moves
+            newMoves = trainer.new_moves
+            for move in newMoves:
+                Cube.scramble_moves.append(move)
+                await Cube.send_ui("moves",moves_to_string(Cube.scramble_moves))
+                # print(move, flush=True, end=" ") # add to websocket
+                Cube.alg.movesToExecute = move
+                Cube.alg.executeAlg()
+                if (Cube.alg.checkSolved() == True):
+                    Cube.scramble = False
+        trainer.data_move_counter = trainer.data[12]
+
+
+async def initCube(websocket, path):
+
     Cube = DNFanalyzer()
+    Cube.ws_ui = websocket
+    Cube.resetCube()
+    Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
+    Cube.alg.executeAlg()
+    Cube.alg.reverseSelf()
+    trainer = Trainer()
+    trainer.ble_server = BleakClient(trainer.addr)
+    await trainer.ble_server.connect()
 
-    while(True):
-        print("\n")
-        resetCube(Cube)
-        Cube.alg.move(Cube.scrambleToExe)  # put scramble moves ready to execute
+    while True:
+        Cube.resetCube()
+        Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
         Cube.alg.executeAlg()
         Cube.alg.reverseSelf()
-
-        print("press space when cube is solved")
-        while(keyboard.is_pressed(' ') == False):
-            pass
-        moves = browser.execute_script(script)
-        newMoves = findNewMoves(lastMoves, moves)
-        lastMoves = moves
-        print(Cube.scrambleToExe)
-        while(Cube.scramble == True):#Scramble Cube
-            moves = browser.execute_script(script)
-            newMoves = findNewMoves(lastMoves, moves)
-            lastMoves = moves
-            for move in newMoves:
-                #print(" ",movesList[move], end="", flush=True)
-                Cube.alg.executeAlgWithMoves(movesList[move])
-                if(Cube.alg.checkSolved() == True):
-                    Cube.scramble = False
-
-        flagSpace =False
-        c = 0
-        print("\npress space to start memo")
-        while(flagSpace == False):
-            if(keyboard.is_pressed(' ') == True):
-                c+=1
-            if(c==3):
-                flagSpace = True
-                c=0
-        f= open('boolVid.txt', 'w')#used txt file bool because i didn't managed to figure out how to do it in one file....
-        f.write('T')
-        f.close()
-        subprocess.Popen(["python","recordVid.py"])#record video while solving
-        while(open('StartRec.txt').read(1) != 'T'):
-            pass
+        await scramble_cube(Cube,trainer)
+        await Cube.send_ui("msg","press enter to start memo") # add to websocket
+        Cube.wait()
         Cube.solveTime = time.time()
-        print("press s to start solve")
-        while (keyboard.is_pressed('s') == False):
-            pass
-        print("Solve!")
-        Cube.memoTime = time.time()- Cube.solveTime
+        subprocess.Popen(["python","recordVid.py"])#record video while solving
+        Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
+        Cube.ws_rec.send(bytearray(str(Cube.scrambleRow), 'utf-8'))
+        started = Cube.ws_rec.recv(1024).decode('utf-8')
+        diff = time.time() - Cube.solveTime
+
+        print("time difff : {}".format(diff))
+        await Cube.send_ui("msg","press enter to start solve") # add to websocket
+        Cube.wait()
+        time.sleep(1)
+        await Cube.send_ui("msg","Solve!")
+        Cube.memoTime = time.time() - Cube.solveTime
         moveCount = 0
-        Cube.exeTime = time.time()
+        Cube.exeTime = time.time() - diff
         exeMoves = []
         moves = []
-        while (keyboard.is_pressed(' ') == False):  #While you are solving the cube
-            moves = browser.execute_script(script)
-            newMoves = findNewMoves(lastMoves, moves)
-            lastMoves = moves
 
-            for move in newMoves:
-                exeMoves.append([movesList[move],time.time(), 0, 0, moveCount])
-                moveCount+=1
+        while (keyboard.is_pressed(' ') == False):  #While you are solving the cube
+            trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
+            trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
+            if (trainer.new_moves):
+
+                newM = trainer.new_moves
+                print("before : {}".format(trainer.new_moves))
+                trainer.new_moves.reverse()
+                print("after : {}".format(trainer.new_moves))
+                trainer.moves += trainer.new_moves
+                newMoves = trainer.new_moves
+
+                for move in newMoves:
+                    print("move : {} ".format(move))
+                    exeMoves.append([move, int(time.time() - Cube.solveTime - diff), 0, 0, moveCount])
+                    moveCount += 1
+                    moves.append(move)
+                    # print(move, flush=True, end=" ")  # add to websocket
+                    await Cube.send_ui("moves",moves_to_string(moves))
+            trainer.data_move_counter = trainer.data[12]
+
+        await Cube.send_ui("msg","finish")
         Cube.exeTime = time.time()- Cube.exeTime
-        a = open('boolVid.txt','w')
-        a.write('F')
-        a.close()
+        Cube.ws_rec.send(bytearray('STOP', 'utf-8'))
+        Cube.frame_rate = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
+        Cube.video_time = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
 
         #finished solve
         Cube.alg.reset()
@@ -295,8 +340,8 @@ def initCube():
             Cube.alg.reverseSelf()
             Cube.alg.executeAlg()
             Cube.alg.reverseSelf()
-            #print("move is :", move[0]," moveNum ", move[4])
-            #Cube.alg.printState()#correct  s
+            # print("move is :", move[0]," moveNum ", move[4])
+            # Cube.alg.printState()#correct  s
             m = move[0]
             t = move[1]
             moveC = move[4]
@@ -320,13 +365,21 @@ def initCube():
         for x in sortedByIndex:
             solve += " " + x[0]
 
+        # solved :works
+        # edges solved, corners not , no parity : works
+        # edges solved corners not, with parity : ???
+        # edges not solved, no paritu :??? - - multiple max edges doesnt work
+        # edges not solved, parity :???
+
+
         Cube.solution = solve
         sortedByIndex.reverse()
         if(exeOrder == "EdgesCorners"):
             if(sortedByIndex[0][2] == 8 and sortedByIndex[0][3] == 12):
-
-                print("Solved!")
+                print("Solved!") # works
             elif((sortedByEdges[0][3] == 12 and Cube.parity == False) or (sortedByEdges[0][3] >=10 and Cube.parity == True)):# if there is parity' and max edges >= 10 then it means edges are good
+
+
                 print("you solved all edges correctly")
                 # corners are wrong
                 maxCornersFullEdges = []
@@ -343,7 +396,8 @@ def initCube():
                     maxCornersFullEdges.reverse()
                     mistakeMove = maxCornersFullEdges[0]
                 Cube.moveWrong = mistakeMove[4]
-                Cube.secMistake = round(mistakeMove[1]-Cube.solveTime,2) #the time of the first time you had max corners solved with full edges
+                # Cube.secMistake = round(mistakeMove[1]-Cube.solveTime,2) #the time of the first time you had max corners solved with full edges
+                Cube.secMistake = mistakeMove[1]
                 print("mistake time was ",Cube.secMistake  , " seconds from the begining")
                 print("the last move right  ", mistakeMove[4], "move, which was ", mistakeMove[0][0])
                 playVid(Cube)
@@ -357,7 +411,8 @@ def initCube():
                 maxEdgesSolved.sort(key=takeTime)
                 sortedByMaxEdgesTime = maxEdgesSolved.copy()
                 Cube.moveWrong = sortedByMaxEdgesTime[0][4]
-                Cube.secMistake = round(sortedByMaxEdgesTime[0][1]-Cube.solveTime, 2) # max edges solved first time
+                # Cube.secMistake = round(sortedByMaxEdgesTime[0][1]-Cube.solveTime, 2) # max edges solved first time
+                Cube.secMistake = sortedByMaxEdgesTime[0][1]
                 print("mistake time was ",Cube.secMistake, " seconds from the begining")
                 print("the last move right  ", sortedByMaxEdgesTime[0][4], "move, which was ", sortedByMaxEdgesTime[0][0])
                 playVid(Cube)
@@ -403,9 +458,15 @@ def initCube():
                 maxCornersSolved.sort(key=takeTime)
                 sortedByMaxCornersTime = maxCornersSolved.copy()
                 Cube.moveWrong = sortedByMaxCornersTime[0][4]
-                Cube.secMistake = round(sortedByMaxCornersTime[0][1]-Cube.solveTime, 2) # the time of the first time you had max corners solved
+                Cube.secMistake = sortedByMaxCornersTime[0][1] # the time of the first time you had max corners solved
                 print("mistake time was ", Cube.secMistake , " seconds from the begining")
                 print("last move right ", sortedByMaxCornersTime[0][4], "move, which was ", sortedByMaxCornersTime[0][4])
                 playVid(Cube)
         saveSolve(Cube)
-initCube()
+
+
+start_server = websockets.serve(initCube, "10.0.0.12", 56789)
+#TODO: fix parity, use websocket for ui , use ffmpeg to add metadata of mistakes, multiple, reset ehwn scramble, multiple tries
+loop = asyncio.get_event_loop()
+loop.run_until_complete(start_server)
+loop.run_forever()

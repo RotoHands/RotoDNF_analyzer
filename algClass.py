@@ -1,7 +1,4 @@
-
 import permutation
-
-
 
 class Alg:
     UCor = permutation.Permutation(2, 3, 4, 1, 17, 18, 7, 8, 5, 6, 11, 12, 9, 10, 15, 16, 13, 14, 19, 20, 21, 22, 23, 24)
@@ -422,4 +419,4 @@ class Alg:
         for move in algMoves:
             self.singlemoveExecute(move)
         self.Solved()
-        #print("moves apllied: ", *algMoves, sep = " ")
+        print("moves apllied: ", *algMoves, sep = " ")

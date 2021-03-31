@@ -1,21 +1,45 @@
 import cv2
 import keyboard
-import pyautogui
-def playVid():
-    row = open('vidNum.txt').readline()
-    sec = float(open('playVid.txt').readline())
-    openPath = "C:\\Python\\PythonWork\\BLD\\RotoBLD\\RotoDNF\\videos\\solve" + str(row) +".avi"
-    cap1 = cv2.VideoCapture(openPath)
+import socket
 
-    cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec*1000-500,2))
+def playVideo():
+    IP = "127.0.0.1"
+    PORT = 12321
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((IP, PORT))
+    server.listen(1)
+    print("here 1")
+    session_socket, client_socket_name = server.accept()
+    session_socket.send(bytearray("start", 'utf-8'))
+    print("here 2")
+
+    data = session_socket.recv(1024).decode('utf-8').split(":")
+    sec_mistake = int(float(data[0]))
+    row = int(data[1])
+    frame_rate = int(float(data[2]))
+    video_time = int(float(data[3]))
+    print("here 3")
+
+    with open("log.txt", "w") as f:
+        f.write("{},{} : {},{} : {},{} : {},{}".format(video_time, type(video_time), sec_mistake, type(sec_mistake), row, type(row) , frame_rate , type(frame_rate)))
+
+    openPath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos',str(row), ".mkv")
+    cap1 = cv2.VideoCapture(openPath)
+    cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec_mistake*1000-500,2))
     times = 2
     c1=0
     c2=0
     c3=0
+    c4=0
+    m = 0
+    e = 0
+    t = 0
+    corrected = False
     while(cap1.isOpened()):
         ret, frame = cap1.read()
         if(ret == True):
-            res = cv2.resize(frame, (0,0), fx=1.4, fy=1.4)
+            # print(cap1.get(cv2.CAP_PROP_POS_MSEC)
+            res = cv2.resize(frame, (640,480))
             cv2.imshow('frame',res)
             cv2.moveWindow('frame', 210, 20)
 
@@ -35,9 +59,37 @@ def playVid():
                 c3 += 1
                 if (c3 >= times):
                     c3 = 0
-                    cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec * 1000-500, 2))
+                    cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec_mistake * 1000-500, 2))
+            # memo : m, trace : t, execution : e
+
+            if (keyboard.is_pressed('m') == True):
+                m += 1
+                if (m >= times):
+                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "memo_forgot_error"),'utf-8'))
+                    corrected = True
+                    break
+            if (keyboard.is_pressed('t') == True):
+                t += 1
+                if (t >= times):
+                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "trace_error"),'utf-8'))
+                    corrected = True
+                    break
+            if (keyboard.is_pressed('e') == True):
+                e += 1
+                if (e >= times):
+                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "exe_error"),'utf-8'))
+                    corrected = True
+                    print("exe_errrrror")
+                    break
+
         else:
             break
+
     cap1.release()
     cv2.destroyAllWindows()
-playVid()
+    if not corrected:
+        session_socket.send(bytearray("finish", 'utf-8'))
+def main():
+    playVideo()
+if __name__ == '__main__':
+    main()
