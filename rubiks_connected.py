@@ -2,9 +2,6 @@ from bleak import BleakClient
 import bleak
 import asyncio
 from bleak import BleakScanner
-async def print_test():
-    for i in range (1000):
-        print("1234")
 def parse_move(msgLen, value):
 
     axisPerm = [5, 2, 0, 3, 1, 4]
@@ -30,6 +27,8 @@ def parseData(value):
     msgLen = len(value) - 6
     if (msgType == 1):
        return parse_move(msgLen, value)
+    else:
+        return("msgType : {}".format(msgType))
 def toHexVal(value):
     valhex = []
     for i in range(len(value)):
@@ -47,14 +46,15 @@ async def connect_to_device(address):
     write_uuid = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
     service = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
 
+
     async with BleakClient(address, timeout=15.0) as client:
         print("connect to", address)
 
         try:
-            print(await client.get_services())
-            await client.write_gatt_char(write_uuid, [51])
+            # print(await client.get_services())
+            # await client.write_gatt_char(write_uuid, [51])
             await client.start_notify(notify_uuid, callback)
-            await print_test()
+            await asyncio.sleep(300)
         except Exception as e:
             print(e)
     print("disconnect from", address)
