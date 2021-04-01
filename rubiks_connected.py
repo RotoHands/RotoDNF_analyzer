@@ -47,13 +47,13 @@ async def connect_to_device(address):
     service = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
 
 
-    async with BleakClient(address, timeout=15.0) as client:
+    async with BleakClient(address, timeout=20.0) as client:
         print("connect to", address)
 
         try:
             # print(await client.get_services())
-            # await client.write_gatt_char(write_uuid, [51])
-            await client.start_notify(notify_uuid, callback)
+            print(await client.read_gatt_char(notify_uuid))
+            # await client.start_notify(notify_uuid, callback)
             await asyncio.sleep(300)
         except Exception as e:
             print(e)
