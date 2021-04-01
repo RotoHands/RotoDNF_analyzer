@@ -51,14 +51,18 @@ async def connect_to_device(address):
         print("connect to", address)
 
         try:
-            # print(await client.get_services())
-            print(await client.read_gatt_char(notify_uuid))
-            # await client.start_notify(notify_uuid, callback)
-            await asyncio.sleep(300)
+            await client.write_gatt_char(write_uuid, bytearray[0x38])
+
+            while True:
+                # print(await client.get_services())
+                print(await client.read_gatt_char(write_uuid))
+                await client.start_notify(notify_uuid, callback)
+                await asyncio.sleep(30)
+                await client.stop_notify(notify_uuid)
         except Exception as e:
             print(e)
     print("disconnect from", address)
 addr = "ec:6a:31:5b:17:2d"
-addrs = "DA:82:22:7A:A8:82"
+addr = "DA:82:22:7A:A8:82"
 loop = asyncio.get_event_loop()
 loop.run_until_complete(connect_to_device(addr))
