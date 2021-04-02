@@ -10,12 +10,12 @@
         <h1 id="scramble"></h1>
 
         <h1 id="moves"></h1>
-        <h1 id="save">space</h1>
+        <h1 id="save"></h1>
         <h1 id="facelet"></h1>
         <h1 id="add"></h1>
 
             <script>
-                let ws = new WebSocket("ws://10.0.0.12:56789/");
+                let ws = new WebSocket("ws://127.0.0.1:56789/");
                 ws.onmessage = function (event) {
                     const data_dict = JSON.parse(event.data);
                     console.log(data_dict)

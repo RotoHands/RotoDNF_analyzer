@@ -11,7 +11,7 @@ import shutil
 from algs_dict_init import load_pkl
 import websockets
 import json
-
+import kociemba
 
 class Trainer:
     def __init__(self):
@@ -47,7 +47,14 @@ class Trainer:
         self.reset_alg()  # initialize alg
         self.solve_time = None
         self.ble_server = None
-        self.addr = "F8:30:02:08:FB:FE"
+        self.gan_addr = "F8:30:02:08:FB:FE"
+        self.rubiks1_addr = "ec:6a:31:5b:17:2d"
+        self.rubiks2_addr = "DA:82:22:7A:A8:82"
+        self.rubiks = True
+        self.chrct_uuid_f5 = '0000fff5-0000-1000-8000-00805f9b34fb'
+        self.chrct_uuid_f2 = "0000fff2-0000-1000-8000-00805f9b34fb"
+        self.chrct_notify = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+        self.chrct_write = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
         self.timesUp = False
         self.finish_training = False
         self.try_again_before_string = 3
@@ -59,11 +66,83 @@ class Trainer:
         self.string_moves = ""
         self.solve_times_alg = ""
         self.timer_show_interval = 10
-        self.chrct_uuid_f5 = '0000fff5-0000-1000-8000-00805f9b34fb'
-        self.chrct_uuid_f2 = "0000fff2-0000-1000-8000-00805f9b34fb"
-        self.state_data = None
-        self.last_state_data = None
-        self.last_state_string = ""
+
+        self.battery = None
+        self.current_moves = ""
+        self.facelet_current_state = ""
+        self.facelet_last_string = ""
+        self.cube_type = ""
+        self.msg_type = ""
+        self.offline_stats = ""
+        self.set_solved = bytearray([0x35])
+        self.get_state = bytearray([0x33])
+
+    async def set_cube_solved(self):
+        await self.ble_server.write_gatt_char(self.chrct_write, self.set_solved)
+
+    async def get_new_moves(self):
+        # await self.ble_server.write_gatt_char(self.chrct_write, self.get_state)
+        # print("last facelet : {} \ncurrent facelet : {}\n".format(self.facelet_last_string, self.facelet_current_state))
+        if self.facelet_last_string != "":
+            if self.facelet_last_string != self.facelet_current_state:
+                # print(self.facelet_current_state)
+                return kociemba.solve(self.facelet_last_string, self.facelet_current_state).split()
+
+    def toHexVal(self, value):
+        valhex = []
+        for i in range(len(value)):
+            valhex.append(value[i] >> 4 & 0xf)
+            valhex.append(value[i] & 0xf)
+        return valhex
+
+    async def parseData(self, value):
+        axisPerm = [5, 2, 0, 3, 1, 4]
+        facePerm = [0, 1, 2, 5, 8, 7, 6, 3]
+        faceOffset = [0, 0, 6, 2, 0, 0]
+        curBatteryLevel = -1
+        if (len(value) < 4):
+            return None
+        if value[0] != 0x2a or value[len(value) - 2] != 0x0d or value[len(value) - 1] != 0x0a:
+            return None
+        msgType = value[2]
+        self.msg_type = msgType
+
+        msgLen = len(value) - 6
+        if (msgType == 1):
+            await self.ble_server.write_gatt_char(self.chrct_write, self.get_state)
+            """
+            for i in range(0, msgLen, 2):
+                axis = axisPerm[value[3 + i] >> 1]
+                power = [0, 2][value[3 + i] & 1]
+                m = axis * 3 + power
+                s = ("URFDLB"[axis] + " 2'"[power])
+                print(s)
+            """
+        elif (msgType == 2):
+            facelet = [""] * 54
+            for a in range(6):
+                axis = axisPerm[a] * 9
+                aoff = faceOffset[a]
+                facelet[axis + 4] = "BFUDRL"[value[3 + a * 9]]
+                for i in range(8):
+                    facelet[axis + facePerm[(i + aoff) % 8]] = "BFUDRL"[value[(3 + a * 9 + i + 1)]]
+            newFacelet = ''.join(facelet)
+            self.facelet_last_string = self.facelet_current_state
+            self.facelet_current_state = newFacelet
+            self.new_moves = await self.get_new_moves()
+        elif (msgType == 5):
+            self.battery = self.toHexVal(value)[3]
+
+        elif (msgType == 7):
+            self.offline_stats = self.toHexVal(value)
+        elif (msgType == 8):
+            self.cube_type = self.toHexVal(value)
+        else:
+            self.msg_type = msgType
+
+    async def callback(self, sender: int, data: bytearray):
+        await self.parseData(data)
+
     def reset_alg(self):
 
         if self.use_recognize:
