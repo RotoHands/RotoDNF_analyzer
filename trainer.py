@@ -76,18 +76,22 @@ class Trainer:
         self.offline_stats = ""
         self.set_solved = bytearray([0x35])
         self.get_state = bytearray([0x33])
-
+        self.moves_done = ""
     async def set_cube_solved(self):
         await self.ble_server.write_gatt_char(self.chrct_write, self.set_solved)
 
-    async def get_new_moves(self):
+    def get_new_moves_rubik(self):
+        print(self.facelet_last_string)
         # await self.ble_server.write_gatt_char(self.chrct_write, self.get_state)
         # print("last facelet : {} \ncurrent facelet : {}\n".format(self.facelet_last_string, self.facelet_current_state))
         if self.facelet_last_string != "":
             if self.facelet_last_string != self.facelet_current_state:
                 # print(self.facelet_current_state)
-                return kociemba.solve(self.facelet_last_string, self.facelet_current_state).split()
-
+                moves =  kociemba.solve(self.facelet_last_string, self.facelet_current_state)
+                self.moves_done += moves
+                print(moves.split())
+                self.new_moves +=  moves.split()
+                print("new moves : {}".format(self.new_moves))
     def toHexVal(self, value):
         valhex = []
         for i in range(len(value)):
@@ -129,7 +133,8 @@ class Trainer:
             newFacelet = ''.join(facelet)
             self.facelet_last_string = self.facelet_current_state
             self.facelet_current_state = newFacelet
-            self.new_moves = await self.get_new_moves()
+            self.get_new_moves_rubik()
+
         elif (msgType == 5):
             self.battery = self.toHexVal(value)[3]
 

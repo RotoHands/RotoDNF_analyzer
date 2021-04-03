@@ -209,14 +209,14 @@ async def reset_scramble(Cube, trainer):
     await Cube.send_ui("msg", "press space when cube is solved")  # add this to websocket
     await trainer.set_cube_solved()
     # Cube.wait()
-    while (not keyboard.is_pressed ):
+    while (not keyboard.is_pressed(' ')):
          pass
     # trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
     # trainer.data_move_counter = trainer.data[12]
     await Cube.send_ui("msg", "scramble")
     await Cube.send_ui("scramble", Cube.scrambleToExe)  # add this to websocket
     Cube.scramble_moves = []
-
+    await trainer.set_cube_solved()
 def get_facelet_strnig(value):
     state = []
     for i in range(0, len(value) - 2, 3):
@@ -264,11 +264,13 @@ async def scramble_cube(Cube, trainer):
         # await get_state(Cube,trainer)
         await asyncio.sleep(0.1)
         # trainer.moves += trainer.new_moves
-        if (trainer.new_moves):
-            print(trainer.new_moves)
-            # trainer.new_moves.reverse()
+        if (len(trainer.new_moves) != trainer.data_move_counter):
+            # print(trainer.new_moves)
             trainer.moves += trainer.new_moves
-            newMoves = trainer.new_moves
+            newMoves = trainer.new_moves[trainer.data_move_counter: len(trainer.new_moves)]
+            trainer.data_move_counter = len(trainer.new_moves)
+            # print(trainer.new_moves)
+            # trainer.new_moves.reverse()
             for move in newMoves:
                 Cube.scramble_moves.append(move)
                 await Cube.send_ui("moves",moves_to_string(Cube.scramble_moves))
@@ -277,7 +279,7 @@ async def scramble_cube(Cube, trainer):
                 Cube.alg.executeAlg()
                 if (Cube.alg.checkSolved() == True):
                     Cube.scramble = False
-            trainer.new_moves = []
+            # trainer.new_moves = []
         # trainer.data_move_counter = trainer.data[12]
 async def initCube(websocket, path):
 
@@ -322,14 +324,16 @@ async def initCube(websocket, path):
             exeMoves = []
             moves = []
 
-            while (keyboard.is_pressed(' ') == False):  #While you are solving the cube
+            while not keyboard.is_pressed(' '):  #While you are solving the cube
                 # trainer.data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f5), trainer.decoder)
                 # trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
                 await asyncio.sleep(0.1)
-                if (trainer.new_moves):
-                    print(trainer.new_moves)
+                if (len(trainer.new_moves) != trainer.data_move_counter):
+                    # print(trainer.new_moves)
                     trainer.moves += trainer.new_moves
-                    newMoves = trainer.new_moves
+                    newMoves = trainer.new_moves[trainer.data_move_counter : len(trainer.new_moves)]
+                    trainer.data_move_counter = len(trainer.new_moves)
+
                     for move in newMoves:
                         # print("move : {} ".format(move))
                         exeMoves.append([move, int(time.time() - Cube.solveTime - diff), 0, 0, moveCount])
@@ -337,7 +341,6 @@ async def initCube(websocket, path):
                         moves.append(move)
                         # print(move, flush=True, end=" ")  # add to websocket
                         await Cube.send_ui("moves",moves_to_string(moves))
-                    trainer.new_moves = []
                 # trainer.data_move_counter = trainer.data[12]
 
             await Cube.send_ui("msg","finish")
@@ -396,12 +399,13 @@ async def initCube(websocket, path):
 
             Cube.solution = solve
             sortedByIndex.reverse()
+            tempSortedIndex = sortedByIndex.copy()
+            sotedByIndexReversed = tempSortedIndex.copy()
+            sotedByIndexReversed.reverse()
             if(exeOrder == "EdgesCorners"):
                 if(sortedByIndex[0][2] == 8 and sortedByIndex[0][3] == 12):
                     print("Solved!") # works
                 elif((sortedByEdges[0][3] == 12 and Cube.parity == False) or (sortedByEdges[0][3] >=10 and Cube.parity == True)):# if there is parity' and max edges >= 10 then it means edges are good
-
-
                     print("you solved all edges correctly")
                     # corners are wrong
                     maxCornersFullEdges = []
@@ -409,14 +413,18 @@ async def initCube(websocket, path):
                         if((x[3] == 12 and Cube.parity == False) or (x[3] >= 10 and Cube.parity == True)):
                             maxCornersFullEdges.append(x)
 
-                    tempSortedIndex = sortedByIndex.copy()
                     maxCornersFullEdges.sort(key=takeTime, reverse=True)
                     print("maxCornersFullEdges ", *maxCornersFullEdges, sep="\n")
                     if(tempSortedIndex[0][3] != 12):#if all edges are not right at the final state, then take the last time all edges were good( mistake in excecution
-                        mistakeMove =  maxCornersFullEdges[0]
-                    else:#take the first time all edges were good (did the wrong Alg)
+
+                        mistakeMove =  sotedByIndexReversed[maxCornersFullEdges[0][4] + 1]
+                        print ("before : {} \nafter : {}".format(maxCornersFullEdges[0],mistakeMove))
+
+                    else: #take the first time all edges were good (did the wrong Alg)
                         maxCornersFullEdges.reverse()
-                        mistakeMove = maxCornersFullEdges[0]
+                        mistakeMove = sotedByIndexReversed[maxCornersFullEdges[0][4] + 1]
+                        print ("before : {} \nafter : {}".format(maxCornersFullEdges[0],mistakeMove))
+
                     Cube.moveWrong = mistakeMove[4]
                     # Cube.secMistake = round(mistakeMove[1]-Cube.solveTime,2) #the time of the first time you had max corners solved with full edges
                     Cube.secMistake = mistakeMove[1]
@@ -425,6 +433,8 @@ async def initCube(websocket, path):
                     playVid(Cube)
 
                 else: #not all edges are good find the most edges solved
+                    tempSortedIndex = sortedByIndex.copy()
+
                     max = sortedByEdges[0][3]
                     maxEdgesSolved = []
                     for move in sortedByEdges:
@@ -432,11 +442,11 @@ async def initCube(websocket, path):
                             maxEdgesSolved.append(move)
                     maxEdgesSolved.sort(key=takeTime)
                     sortedByMaxEdgesTime = maxEdgesSolved.copy()
-                    Cube.moveWrong = sortedByMaxEdgesTime[0][4]
+                    Cube.moveWrong = sortedByMaxEdgesTime[0][4] + 1
                     # Cube.secMistake = round(sortedByMaxEdgesTime[0][1]-Cube.solveTime, 2) # max edges solved first time
-                    Cube.secMistake = sortedByMaxEdgesTime[0][1]
+                    Cube.secMistake = sotedByIndexReversed[sortedByMaxEdgesTime[0][4] + 1][1]
                     print("mistake time was ",Cube.secMistake, " seconds from the begining")
-                    print("the last move right  ", sortedByMaxEdgesTime[0][4], "move, which was ", sortedByMaxEdgesTime[0][0])
+                    print("the last move right  ", sortedByMaxEdgesTime[0][4] + 1, "move, which was ", sotedByIndexReversed[sortedByMaxEdgesTime[0][4] + 1 ][0])
                     playVid(Cube)
 
             else:
@@ -448,7 +458,6 @@ async def initCube(websocket, path):
                     #not all edges are good
 
                     maxEdgesFullCorners = []#edges are wrong
-
                     for x in sortedByEdges:
                         if ((x[2] == 8 and Cube.parity == False) or (x[2] >= 6 and Cube.parity == True)):
                             maxEdgesFullCorners.append(x)
@@ -459,13 +468,13 @@ async def initCube(websocket, path):
                     maxEdgesFullCorners.sort(key=takeTime, reverse=True)
                     tempSortedIndex = sortedByIndex.copy()
                     if (tempSortedIndex[0][3] != 8):  # if all edges are not right at the final state, then take the last time all edges were good
-                        mistakeMove = maxEdgesFullCorners[0]
+                        mistakeMove = sotedByIndexReversed[maxEdgesFullCorners[0][4] + 1]
                     else:  # take the first time all edges were good
                         maxEdgesFullCorners.reverse()
-                        mistakeMove = maxEdgesFullCorners[0]
+                        mistakeMove = sotedByIndexReversed[maxEdgesFullCorners[0][4] + 1]
                     Cube.moveWrong = mistakeMove[4]
                     sortedByMaxEdgesTime = maxEdgesFullCorners.copy()
-                    Cube.secMistake =round(mistakeMove[1]-Cube.solveTime ,2)# the time of the first time you had max corners solved
+                    Cube.secMistake =round(mistakeMove[1]-Cube.solveTime ,2) # the time of the first time you had max corners solved
                     print("mistake time was ", Cube.secMistake, " seconds from the begining")
                     print("last move right ", mistakeMove[4], "move, which was ",
                           mistakeMove[0])
@@ -479,10 +488,10 @@ async def initCube(websocket, path):
                             maxCornersSolved.append(move)
                     maxCornersSolved.sort(key=takeTime)
                     sortedByMaxCornersTime = maxCornersSolved.copy()
-                    Cube.moveWrong = sortedByMaxCornersTime[0][4]
-                    Cube.secMistake = sortedByMaxCornersTime[0][1] # the time of the first time you had max corners solved
+                    Cube.moveWrong = sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][4]
+                    Cube.secMistake = sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][1] # the time of the first time you had max corners solved
                     print("mistake time was ", Cube.secMistake , " seconds from the begining")
-                    print("last move right ", sortedByMaxCornersTime[0][4], "move, which was ", sortedByMaxCornersTime[0][4])
+                    print("last move right ", sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][4], "move, which was ", sortedByMaxCornersTime[0][4])
                     playVid(Cube)
             saveSolve(Cube)
 
