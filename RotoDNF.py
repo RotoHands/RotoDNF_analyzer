@@ -81,6 +81,7 @@ class DNFanalyzer:
         self.mostPiecesSolved = 0
         self.solution = ""
         self.moveWrong = 0
+        self.scramble_moves = []
 
     async def send_ui(self, field, msg):
         data_to_ui = json.dumps({field:msg})
@@ -199,13 +200,14 @@ def moves_to_string(moves):
         st += m + " "
     return st
 async def reset_scramble(Cube, trainer):
-    Cube.facelet_moves = ""
     Cube.resetCube()
     Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
     Cube.alg.executeAlg()
     Cube.alg.reverseSelf()
     trainer.facelet_last_string = ""
     trainer.facelet_current_state = ""
+    Cube.facelet_moves = ""
+
     await Cube.send_ui("msg", "press space when cube is solved")  # add this to websocket
     await trainer.set_cube_solved()
     # Cube.wait()
@@ -243,7 +245,11 @@ async def get_state(Cube, trainer):
 async def scramble_cube(Cube, trainer):
 
     print("hereeee")
-    await Cube.send_ui("msg","press space when cube is solved") # add this to websocket
+    trainer.facelet_last_string = ""
+    trainer.facelet_current_state = ""
+    Cube.facelet_moves = ""
+    await Cube.send_ui("msg","press space when cube is solved")
+    await Cube.send_ui("moves", "")
     while (not keyboard.is_pressed(' ')):
          pass
     await trainer.set_cube_solved()
@@ -265,16 +271,13 @@ async def scramble_cube(Cube, trainer):
         await asyncio.sleep(0.1)
         # trainer.moves += trainer.new_moves
         if (len(trainer.new_moves) != trainer.data_move_counter):
-            # print(trainer.new_moves)
             trainer.moves += trainer.new_moves
             newMoves = trainer.new_moves[trainer.data_move_counter: len(trainer.new_moves)]
             trainer.data_move_counter = len(trainer.new_moves)
-            # print(trainer.new_moves)
             # trainer.new_moves.reverse()
             for move in newMoves:
                 Cube.scramble_moves.append(move)
                 await Cube.send_ui("moves",moves_to_string(Cube.scramble_moves))
-                # print(move, flush=True, end=" ") # add to websocket
                 Cube.alg.movesToExecute = move
                 Cube.alg.executeAlg()
                 if (Cube.alg.checkSolved() == True):
@@ -295,8 +298,6 @@ async def initCube(websocket, path):
         if trainer.rubiks == True:
             await trainer.ble_server.start_notify(14, trainer.callback)
 
-            print("here")
-
         while True:
 
             Cube.resetCube()
@@ -315,8 +316,8 @@ async def initCube(websocket, path):
 
             print("time difff : {}".format(diff))
             await Cube.send_ui("msg","press enter to start solve") # add to websocket
-            Cube.wait()
-            time.sleep(1)
+            while(len(trainer.new_moves) == trainer.data_move_counter):
+                await asyncio.sleep(0.1)
             await Cube.send_ui("msg","Solve!")
             Cube.memoTime = time.time() - Cube.solveTime
             moveCount = 0
@@ -329,17 +330,14 @@ async def initCube(websocket, path):
                 # trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
                 await asyncio.sleep(0.1)
                 if (len(trainer.new_moves) != trainer.data_move_counter):
-                    # print(trainer.new_moves)
                     trainer.moves += trainer.new_moves
                     newMoves = trainer.new_moves[trainer.data_move_counter : len(trainer.new_moves)]
                     trainer.data_move_counter = len(trainer.new_moves)
 
                     for move in newMoves:
-                        # print("move : {} ".format(move))
                         exeMoves.append([move, int(time.time() - Cube.solveTime - diff), 0, 0, moveCount])
                         moveCount += 1
                         moves.append(move)
-                        # print(move, flush=True, end=" ")  # add to websocket
                         await Cube.send_ui("moves",moves_to_string(moves))
                 # trainer.data_move_counter = trainer.data[12]
 
@@ -359,14 +357,11 @@ async def initCube(websocket, path):
             else:
                 Cube.parity = True
                 print("parity")
-            #Cube.alg.printState()
             for move in exeMoves:
                 Cube.alg.movesToExecute = move[0]
                 Cube.alg.reverseSelf()
                 Cube.alg.executeAlg()
                 Cube.alg.reverseSelf()
-                # print("move is :", move[0]," moveNum ", move[4])
-                # Cube.alg.printState()#correct  s
                 m = move[0]
                 t = move[1]
                 moveC = move[4]
@@ -497,7 +492,7 @@ async def initCube(websocket, path):
 
 
 start_server = websockets.serve(initCube, "127.0.0.1", 56789)
-#TODO: fix parity, use websocket for ui , use ffmpeg to add metadata of mistakes, multiple, reset ehwn scramble, multiple tries
+#TODO: fix parity,  use ffmpeg to add metadata of mistakes, trace alg solved and theit times --> to trainer,
 loop = asyncio.get_event_loop()
 loop.run_until_complete(start_server)
 loop.run_forever()
