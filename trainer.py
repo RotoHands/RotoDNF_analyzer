@@ -66,7 +66,7 @@ class Trainer:
         self.string_moves = ""
         self.solve_times_alg = ""
         self.timer_show_interval = 10
-
+        self.new_moves_rubiks = []
         self.battery = None
         self.current_moves = ""
         self.facelet_current_state = ""
@@ -82,16 +82,12 @@ class Trainer:
 
     def get_new_moves_rubik(self):
         print(self.facelet_last_string)
-        # await self.ble_server.write_gatt_char(self.chrct_write, self.get_state)
-        # print("last facelet : {} \ncurrent facelet : {}\n".format(self.facelet_last_string, self.facelet_current_state))
         if self.facelet_last_string != "":
             if self.facelet_last_string != self.facelet_current_state:
-                # print(self.facelet_current_state)
                 moves =  kociemba.solve(self.facelet_last_string, self.facelet_current_state)
                 self.moves_done += moves
                 print(moves.split())
                 self.new_moves +=  moves.split()
-                print("new moves : {}".format(self.new_moves))
     def toHexVal(self, value):
         valhex = []
         for i in range(len(value)):
@@ -161,7 +157,6 @@ class Trainer:
         self.moves = []
         self.algStartTime = 0
         self.data_send["moves"] = ""
-        # print(self.algs_dict[self.index_train])
 
     def moves_to_string(self):
         st = ""
@@ -227,11 +222,16 @@ class Trainer:
         if self.use_recognize and len(self.moves) > 0 and not self.recognize_time_finished:
             self.recognize_time = time.time() - self.recognize_time
             self.recognize_time_finished = True
-        self.new_moves.reverse()
-        for move in self.new_moves:
-            self.current_alg.movesToExecute = move
-            self.current_alg.executeAlg()
-
+        if not self.rubiks :
+            self.new_moves.reverse()
+            for move in self.new_moves:
+                self.current_alg.movesToExecute = move
+                self.current_alg.executeAlg()
+        else:
+            for move in self.new_moves_rubiks:
+                print(move)
+                self.current_alg.movesToExecute = move
+                self.current_alg.executeAlg()
         if self.current_alg.isSolved:
             self.countTraining += 1
             self.add_solve_to_dict()
@@ -315,6 +315,8 @@ def get_new_moves(data, counter):
             print("{} : {} : {} : {}".format(i, new_counter, counter, new_moves))
     return new_moves
 
+def get_new_moves_rubik():
+    pass
 
 async def connect(websocket, path):
 
@@ -324,28 +326,52 @@ async def connect(websocket, path):
     chrct_uuid_f7 = '0000fff7' + uuid_suffix
 
     trainer = Trainer()
-    trainer.ble_server = BleakClient(trainer.addr)
-    await trainer.ble_server.connect()
-    key = [59, 18, 93, 222, 120, 218, 120, 216, 7, 96, 163, 218, 130, 60, 1, 241]
-    decoder = aes128(key)
-    batt = await trainer.ble_server.read_gatt_char(chrct_uuid_f7)
-    print(batt[7])
-    trainer.websocket = websocket
-    trainer.data = decData(await trainer.ble_server.read_gatt_char(chrct_uuid_f5), decoder)
-    trainer.data_move_counter = trainer.data[12]
-    while not trainer.finish_training:
-        if int(trainer.finish_training_time - time.time()) % trainer.timer_show_interval == 0:
-            minutes= str(int(trainer.finish_training_time - time.time()) // 60)
-            sec = str(int(trainer.finish_training_time - time.time()) % 60)
-            trainer.data_send["timer"] = "{}:{}".format(minutes, sec)
+    if (not trainer.rubiks):
+        trainer.ble_server = BleakClient(trainer.gan_addr)
+
+        await trainer.ble_server.connect()
+        key = [59, 18, 93, 222, 120, 218, 120, 216, 7, 96, 163, 218, 130, 60, 1, 241]
+        decoder = aes128(key)
+        batt = await trainer.ble_server.read_gatt_char(chrct_uuid_f7)
+        print(batt[7])
+        trainer.websocket = websocket
         trainer.data = decData(await trainer.ble_server.read_gatt_char(chrct_uuid_f5), decoder)
-        trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
-        trainer.moves += trainer.new_moves
         trainer.data_move_counter = trainer.data[12]
-        trainer.exec_action()
-        if trainer.data_send:
-            await trainer.websocket.send(json.dumps(trainer.data_send))
-        trainer.data_send = {}
+        while not trainer.finish_training:
+            if int(trainer.finish_training_time - time.time()) % trainer.timer_show_interval == 0:
+                minutes= str(int(trainer.finish_training_time - time.time()) // 60)
+                sec = str(int(trainer.finish_training_time - time.time()) % 60)
+                trainer.data_send["timer"] = "{}:{}".format(minutes, sec)
+            trainer.data = decData(await trainer.ble_server.read_gatt_char(chrct_uuid_f5), decoder)
+            trainer.new_moves = get_new_moves(trainer.data, trainer.data_move_counter)
+            trainer.moves += trainer.new_moves
+            trainer.data_move_counter = trainer.data[12]
+
+            trainer.exec_action()
+            if trainer.data_send:
+                await trainer.websocket.send(json.dumps(trainer.data_send))
+            trainer.data_send = {}
+    else:
+        async with BleakClient(trainer.rubiks1_addr, timeout=20.0) as trainer.ble_server:
+            await trainer.ble_server.start_notify(14, trainer.callback)
+            await trainer.set_cube_solved()
+            print("here")
+            trainer.websocket = websocket
+            while not trainer.finish_training:
+                if int(trainer.finish_training_time - time.time()) % trainer.timer_show_interval == 0:
+                    minutes = str(int(trainer.finish_training_time - time.time()) // 60)
+                    sec = str(int(trainer.finish_training_time - time.time()) % 60)
+                    trainer.data_send["timer"] = "{}:{}".format(minutes, sec)
+                await asyncio.sleep(0.1)
+                if (len(trainer.new_moves) != trainer.data_move_counter):
+                    trainer.new_moves_rubiks = trainer.new_moves[trainer.data_move_counter: len(trainer.new_moves)]
+                    trainer.moves += trainer.new_moves_rubiks
+                    trainer.data_move_counter = len(trainer.new_moves)
+                    trainer.exec_action()
+
+                if trainer.data_send:
+                    await trainer.websocket.send(json.dumps(trainer.data_send))
+                trainer.data_send = {}
     await trainer.ble_server.disconnect()
 
     for i in range(500, 504):
@@ -353,7 +379,7 @@ async def connect(websocket, path):
         trainer.print_solves(i)
 
 def main():
-    start_server = websockets.serve(connect, "10.0.0.12", 5678)
+    start_server = websockets.serve(connect, "127.0.0.1", 56789)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
