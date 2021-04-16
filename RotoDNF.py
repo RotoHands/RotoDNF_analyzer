@@ -490,9 +490,12 @@ async def initCube(websocket, path):
                     playVid(Cube)
             saveSolve(Cube)
 
+def main():
+    start_server = websockets.serve(initCube, "127.0.0.1", 56789)
+    #TODO: fix parity,  use ffmpeg to add metadata of mistakes, trace alg solved and theit times --> to trainer,
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_server)
+    loop.run_forever()
 
-start_server = websockets.serve(initCube, "127.0.0.1", 56789)
-#TODO: fix parity,  use ffmpeg to add metadata of mistakes, trace alg solved and theit times --> to trainer,
-loop = asyncio.get_event_loop()
-loop.run_until_complete(start_server)
-loop.run_forever()
+if __name__ == '__main__':
+    main()
