@@ -402,28 +402,34 @@ class Cube:
             print("edges")
             comm.append(self.buffer_ed)
             current_num = self.last_solved_pieces[self.buffer_ed][0]
-            while True:
+            flag = False
+            while not flag:
                 for i in self.last_solved_pieces:
                     if self.last_solved_pieces[i][1] == current_num:
                         current_num = self.last_solved_pieces[i][0]
                         comm.append(i)
-                if current_num == self.last_solved_pieces[self.buffer_ed][1]:
-                    break
+                    if current_num == self.last_solved_pieces[self.buffer_ed][1]:
+                        flag = True
+                        break
+
         if self.buffer_cor in self.last_solved_pieces:
             print("corners")
             comm.append(self.buffer_cor)
             current_num = self.last_solved_pieces[self.buffer_cor][0]
-            while True:
+            flag = False
+            while not flag:
                 print(comm)
                 for i in self.last_solved_pieces:
                     if self.last_solved_pieces[i][1] == current_num:
                         current_num = self.last_solved_pieces[i][0]
                         comm.append(i)
-                if current_num == self.last_solved_pieces[self.buffer_cor][1]:
-                    break
+                    print("current num : {}".format(current_num))
+                    if current_num == self.last_solved_pieces[self.buffer_cor][1]:
+                        flag = True
+                        break
         for i in range(len(comm)):
             comm[i] = self.dict_stickers[comm[i]]
-        print(comm)
+        return comm
 
     def exe_move(self, move):
         self.singlemoveExecute(move)
@@ -483,9 +489,9 @@ def main():
 
     SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
-    SCRAMBLE = "R' D R U2 R' D' R U2"
+    # SCRAMBLE = "R' D R U2 R' D' R U2"
     # SCRAMBLE = "B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2"
-    SOLVE = "U2 R' D R U2 R' D' R"
+    # SOLVE = "U2 R' D R U2 R' D' R"
     # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw'"
     # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
 
