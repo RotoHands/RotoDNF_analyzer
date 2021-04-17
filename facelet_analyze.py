@@ -50,12 +50,19 @@ class Cube:
         self.F = permutation.Permutation(1, 2, 3, 4, 5, 6, 45, 42, 39, 7, 11, 12, 8, 14, 15, 9, 17, 18, 25, 22, 19, 26,23, 20, 27, 24, 21, 16, 13, 10, 31, 32, 33, 34, 35, 36, 37, 38, 28, 40, 41, 29,43, 44, 30, 46, 47, 48, 49, 50, 51, 52, 53, 54).inverse()
         self.FP = self.F.inverse()
         self.F2 = self.F * self.F
-
-
+        self.M = permutation.Permutation(1, 53, 3, 4, 50, 6, 7, 47, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 21, 22, 5, 24, 25, 8, 27, 28, 20, 30, 31, 23, 33, 34, 26, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 35, 48, 49, 32, 51, 52, 29, 54).inverse()
+        self.MP = self.M.inverse()
+        self.M2 = self.M * self.M
+        self.S = permutation.Permutation(1, 2, 3, 44, 41, 38, 7, 8, 9, 10, 4, 12, 13, 5, 15, 6, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 16, 14, 11, 34, 35, 36, 37, 31, 39, 40, 32, 42, 43, 33, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54).inverse()
+        self.SP = self.S.inverse()
+        self.S2 = self.S * self.S
+        self.E = permutation.Permutation(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 22, 23, 24, 16, 17, 18, 19, 20, 21, 40, 41, 42, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 49, 50, 51, 43, 44, 45, 46, 47, 48, 13, 14, 15, 52, 53, 54).inverse()
+        self.EP = self.E.inverse()
+        self.E2 = self.E * self.E
     def diff_states(self, perm_list):
-        # return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
+        return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
 
-        return jellyfish.levenshtein_distance(self.current_max_perm_list, perm_list)
+        #return jellyfish.levenshtein_distance(self.current_max_perm_list, perm_list)
 
 
 
@@ -96,6 +103,105 @@ class Cube:
         self.current_perm = self.FP * self.current_perm
     def f2(self):
         self.current_perm = self.F * self.F * self.current_perm
+    def m(self):
+        self.current_perm = self.M * self.current_perm
+    def mp(self):
+        self.current_perm = self.MP * self.current_perm
+    def m2(self):
+        self.current_perm = self.M * self.M * self.current_perm
+    def e(self):
+        self.current_perm = self.E * self.current_perm
+    def ep(self):
+        self.current_perm = self.EP * self.current_perm
+    def e2(self):
+        self.current_perm = self.E * self.E * self.current_perm
+    def s(self):
+        self.current_perm = self.S * self.current_perm
+    def sp(self):
+        self.current_perm = self.SP * self.current_perm
+    def s2(self):
+        self.current_perm = self.S * self.S * self.current_perm
+    def rw(self):
+        self.current_perm = self.R * self.current_perm
+        self.current_perm = self.MP * self.current_perm
+    def rwp(self):
+        self.current_perm = self.RP * self.current_perm
+        self.current_perm = self.M * self.current_perm
+    def rw2(self):
+        self.current_perm = self.R * self.R * self.current_perm
+        self.current_perm = self.MP * self.MP *  self.current_perm
+    def lw(self):
+        self.current_perm = self.L * self.current_perm
+        self.current_perm = self.M * self.current_perm
+    def lwp(self):
+        self.current_perm = self.LP * self.current_perm
+        self.current_perm = self.MP * self.current_perm
+    def lw2(self):
+        self.current_perm = self.L * self.L * self.current_perm
+        self.current_perm = self.M * self.M *  self.current_perm
+    def uw(self):
+        self.current_perm = self.U * self.current_perm
+        self.current_perm = self.EP * self.current_perm
+    def uwp(self):
+        self.current_perm = self.UP * self.current_perm
+        self.current_perm = self.E * self.current_perm
+    def uw2(self):
+        self.current_perm = self.U * self.U * self.current_perm
+        self.current_perm = self.EP * self.EP *  self.current_perm
+    def dw(self):
+        self.current_perm = self.D * self.current_perm
+        self.current_perm = self.E * self.current_perm
+    def dwp(self):
+        self.current_perm = self.DP * self.current_perm
+        self.current_perm = self.EP * self.current_perm
+    def dw2(self):
+        self.current_perm = self.D * self.D * self.current_perm
+        self.current_perm = self.D * self.D *  self.current_perm
+    def fw(self):
+        self.current_perm = self.F * self.current_perm
+        self.current_perm = self.S * self.current_perm
+    def fwp(self):
+        self.current_perm = self.FP * self.current_perm
+        self.current_perm = self.SP * self.current_perm
+    def fw2(self):
+        self.current_perm = self.F * self.F * self.current_perm
+        self.current_perm = self.S * self.S *  self.current_perm
+    def bw(self):
+        self.current_perm = self.B * self.current_perm
+        self.current_perm = self.SP * self.current_perm
+    def bwp(self):
+        self.current_perm = self.BP * self.current_perm
+        self.current_perm = self.S * self.current_perm
+    def bw2(self):
+        self.current_perm = self.B * self.B * self.current_perm
+        self.current_perm = self.SP * self.SP *  self.current_perm
+    def x(self):
+        self.rw()
+        self.lp()
+    def xp(self):
+        self.rwp()
+        self.l()
+    def x2(self):
+        self.x()
+        self.x()
+    def y(self):
+        self.uw()
+        self.dp()
+    def yp(self):
+        self.uwp()
+        self.d()
+    def y2(self):
+        self.y()
+        self.y()
+    def z(self):
+        self.fw()
+        self.bp()
+    def zp(self):
+        self.fwp()
+        self.b()
+    def z2(self):
+        self.z()
+        self.z()
 
     def gen_url(self):
         self.url = "https://www.cubedb.net/?rank=3&title={}&scramble=".format("test")
@@ -164,6 +270,18 @@ class Cube:
         'U\'': self.up,
         'U2': self.u2,
         'U2\'': self.u2,
+        "S": self.s,
+        'S\'': self.sp,
+        'S2': self.s2,
+        'S2\'': self.s2,
+        "E": self.e,
+        'E\'': self.ep,
+        'E2': self.e2,
+        'E2\'': self.e2,
+        "M": self.m,
+        'M\'': self.mp,
+        'M2': self.m2,
+        'M2\'': self.m2,
     }
 
         # funcMoves.get('R')()
@@ -198,10 +316,10 @@ class Cube:
 def main():
     SOLVED = "0UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
     MISTAKE_SOLVE_CORNERS = "D D U' R' U' D B2 U D' R' U D' D' U' D B' U D' R U' R' U' D B U2 D' U' R' L F R' L D2 R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U2 R D R' U U R D' R' R' R U R D' R' U' R D R' R' R R R D D U' R'"
-    SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
-    SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
+    # SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
+    # SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
 
-    SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
+    SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
     cube = Cube()
     cube.scramble = SCRAMBLE
@@ -229,7 +347,7 @@ def main():
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff < 18:
+        if diff > 0.85 : #18:
             cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
