@@ -1,5 +1,5 @@
 
-
+from bld_comm_parser import alg_maker
 import permutation
 import kociemba
 from RotoDNF import DNFanalyzer
@@ -444,7 +444,7 @@ class Cube:
                         break
 
         for i in range(len(comm)):
-            comm[i] = self.dict_stickers[comm[i]]
+            comm[i] = self.dict_lp[self.dict_stickers[comm[i]]]
 
         return comm
 
@@ -511,7 +511,8 @@ def main():
     # SOLVE = "U2 R' D R U2 R' D' R"
     # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw'"
     # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
-
+    SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw' "
+    SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
     cube = Cube()
     cube.scramble = SCRAMBLE
     cube.solve = SOLVE
@@ -561,6 +562,6 @@ def main():
 
     cube.gen_url()
     print(*cube.solve_stats, sep="\n")
-
+    print(alg_maker(" [R' S' R, F] "))
 if __name__ == '__main__':
     main()
