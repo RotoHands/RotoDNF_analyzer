@@ -54,6 +54,7 @@ class Cube:
 
     def diff_states(self, perm_list):
         # return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
+
         return jellyfish.levenshtein_distance(self.current_max_perm_list, perm_list)
 
 
@@ -112,8 +113,11 @@ class Cube:
                 self.url += move["comment"]
         pyperclip.copy(self.url)
 
-
-
+    def perm_to_string(self, perm):
+        perm_string = ""
+        for i in range(1,55):
+            perm_string += str(perm(i)) + " "
+        return (perm_string)
     def count_solved_cor(self):
         solved_corners = 0
 
@@ -197,8 +201,8 @@ def main():
     SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
     SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
 
-    # SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
-    # SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
+    SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
+    SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
     cube = Cube()
     cube.scramble = SCRAMBLE
     cube.solve = SOLVE
@@ -212,20 +216,24 @@ def main():
         cube.max_edges = 10
     count = 0
     cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
-    cube.current_max_perm_list = cube.current_perm.__str__()
+    cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
+
+
+
+
     for move in cube.solve.split():
         count += 1
         cube.exe_move(move)
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
-        diff = cube.diff_states(cube.current_perm.__str__())
+        diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff < 30:
-            cube.current_max_perm_list = cube.current_perm.__str__()
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.current_perm.__str__()})
+        if diff < 18:
+            cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.current_perm.__str__()})
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
 
     print("corners : {}, edges : {}".format(cube.count_solved_cor(), cube.count_solve_edges()))
     print(kociemba.solve(cube.current_facelet[1:], SOLVED[1:]))
