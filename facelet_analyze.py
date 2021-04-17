@@ -40,7 +40,8 @@ class Cube:
         self.max_edges = 12
         self.rotation = ['x', 'x\'', 'x2', 'z', 'z\'', 'z2', 'y', 'y\'', 'y2']
         self.last_solved_pieces = {}
-
+        self.buffer_ed = self.get_buffer_ed("UF")
+        self.buffer_cor = self.get_buffer_cor("UFR")
         self.current_facelet = ""
         self.R = permutation.Permutation(1, 2, 21, 4, 5, 24, 7, 8, 27, 16, 13, 10, 17, 14, 11, 18, 15, 12, 19, 20, 30, 22, 23, 33, 25, 26, 36, 28, 29, 52, 31, 32, 49, 34, 35, 46, 37, 38, 39, 40, 41,42, 43, 44, 45, 9, 47, 48, 6, 50, 51, 3, 53, 54).inverse()
         self.RP = self.R.inverse()
@@ -72,7 +73,16 @@ class Cube:
 
 
 
-
+    def get_buffer_cor(self, cor_name):
+        for i in range(1,55):
+            if  i in self.dict_stickers:
+                if self.dict_stickers[i] == cor_name:
+                    return i
+    def get_buffer_ed(self, ed_name):
+        for i in range(1,55):
+            if i in self.dict_stickers:
+                if self.dict_stickers[i] == ed_name:
+                    return i
     def load_letter_pairs_dict(self):
         with open("sticker_letter_pairs.txt" ,"r", encoding="utf-8") as f:
             dict_lp = {}
@@ -375,16 +385,21 @@ class Cube:
     def diff_solved_state(self):
         last = self.current_max_perm_list
         current = self.current_perm
-
-        max = self.perm_to_string(last.inverse()).split()
+        last = self.perm_to_string(last.inverse()).split()
         current = self.perm_to_string(current.inverse()).split()
 
         last_solved_pieces = {}
         for i in range (0,54):
-            if (max[i] != current[i]):
-                last_solved_pieces[i+1] = [max[i], current[i]]
+            if (last[i] != current[i]):
+                last_solved_pieces[i+1] = [last[i], current[i]]
 
         return last_solved_pieces
+
+    def parse_solved_to_comm(self):
+
+        pass
+
+
     def exe_move(self, move):
         self.singlemoveExecute(move)
         facelet_str = self.current_perm.__str__()
@@ -496,5 +511,6 @@ def main():
 
     cube.gen_url()
     print(*cube.solve_stats, sep="\n")
+
 if __name__ == '__main__':
     main()
