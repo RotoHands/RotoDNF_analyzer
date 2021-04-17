@@ -1,3 +1,5 @@
+
+
 import permutation
 import kociemba
 from RotoDNF import DNFanalyzer
@@ -18,6 +20,8 @@ class Cube:
               35: "D", 36: "D", 37: "L", 38: "L", 39: "L", 40: "L", 41: "L", 42: "L", 43: "L", 44: "L", 45: "L",
               46: "B", 47: "B", 48: "B", 49: "B", 50: "B", 51: "B", 52: "B", 53: "B", 54: "B"}
 
+        self.dict_stickers = {1: "UBL", 3: "UBR", 7: "UFL", 9: "UFR", 10: "RFU", 12: "RBU", 16: "RFD", 18: "RBD", 19: "FUL", 21: "FUR" , 25: "FDL",27: "FRD", 28: "DFL", 30: "DFR", 34: "DBL", 36: "DBR", 37: "LBU", 39: "LFU", 43: "LDB", 45: "LFD", 46: "BUR", 48: "BUL", 52: "BRD", 54: "BLD", 2: "UB", 4: "UL", 6: "UR", 8: "UF", 11: "RU", 13: "RF", 15: "RB", 17: "RD", 20: "FU", 22: "FL", 24: "FR", 26: "FD", 29: "DF", 31: "DL", 33: "DR", 35: "DB", 38: "LU", 40: "LB", 42: "LF", 44: "LD", 47: "BU", 49: "BR", 51: "BL", 53: "BD" }
+        self.dict_lp = self.load_letter_pairs_dict()
         self.corners_numbers = [1, 3, 7, 9, 10, 12, 16, 18, 19, 21, 25, 27, 28, 30, 34, 36, 37, 39, 43, 45, 46, 48, 52, 54]
         self.edges_numbers = [2, 4, 6, 8, 11, 13, 15, 17, 20, 22, 24, 26, 29, 31, 33, 35, 38, 40, 42, 44, 47, 49, 51, 53]
         self.current_perm_list = []
@@ -67,6 +71,14 @@ class Cube:
 
 
 
+    def load_letter_pairs_dict(self):
+        with open("sticker_letter_pairs.txt" ,"r", encoding="utf-8") as f:
+            dict_lp = {}
+            file = f.readlines()
+            for line in file:
+                split_data = re.findall('"([^"]*)"', line)
+                dict_lp[split_data[0]] = split_data[1]
+        return (dict_lp)
 
     def diff_states(self, perm_list):
         return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
@@ -446,6 +458,7 @@ def main():
         cube.max_edges = 10
 
     count = 0
+    max_piece_place = 0
     cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
     cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
 
@@ -462,7 +475,8 @@ def main():
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.85 : #18:
+        if diff > 0.85 and (count - max_piece_place > 8): #18:
+            max_piece_place = count
             cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
