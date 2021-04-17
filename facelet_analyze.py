@@ -524,7 +524,7 @@ def main():
         if diff > 0.85 and (count - max_piece_place > 8): #18:
             max_piece_place = count
             cube.last_solved_pieces = cube.diff_solved_state()
-            # cube.parse_solved_to_comm()
+            cube.parse_solved_to_comm()
             # print("count : {} : {}".format(count, cube.last_solved_pieces))
             cube.current_max_perm_list = cube.current_perm
 
