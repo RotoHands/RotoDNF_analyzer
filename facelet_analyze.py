@@ -53,7 +53,7 @@ class Cube:
         self.M = permutation.Permutation(1, 53, 3, 4, 50, 6, 7, 47, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 21, 22, 5, 24, 25, 8, 27, 28, 20, 30, 31, 23, 33, 34, 26, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 35, 48, 49, 32, 51, 52, 29, 54).inverse()
         self.MP = self.M.inverse()
         self.M2 = self.M * self.M
-        self.S = permutation.Permutation(1, 2, 3, 44, 41, 38, 7, 8, 9, 10, 4, 12, 13, 5, 15, 6, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 16, 14, 11, 34, 35, 36, 37, 31, 39, 40, 32, 42, 43, 33, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54).inverse()
+        self.S = permutation.Permutation(1, 2, 3, 44, 41, 38, 7, 8, 9, 10, 4, 12, 13, 5, 15, 16, 6, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 17, 14, 11, 34, 35, 36, 37, 31, 39, 40, 32, 42, 43, 33, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54).inverse()
         self.SP = self.S.inverse()
         self.S2 = self.S * self.S
         self.E = permutation.Permutation(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 22, 23, 24, 16, 17, 18, 19, 20, 21, 40, 41, 42, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 49, 50, 51, 43, 44, 45, 46, 47, 48, 13, 14, 15, 52, 53, 54).inverse()
@@ -203,47 +203,6 @@ class Cube:
         self.z()
         self.z()
 
-    def gen_url(self):
-        self.url = "https://www.cubedb.net/?rank=3&title={}&scramble=".format("test")
-        for move in self.scramble.split():
-            if "\'" in move:
-                move.replace("\'", "-")
-            self.url += "{}_".format(move)
-        self.url += "&alg="
-
-        for move in self.solve_stats:
-            if "\'" in move["move"]:
-                move["move"].replace("\'", "-")
-            self.url += "{}_".format(move["move"])
-            if move["comment"] != "":
-                self.url += move["comment"]
-        pyperclip.copy(self.url)
-
-    def perm_to_string(self, perm):
-        perm_string = ""
-        for i in range(1,55):
-            perm_string += str(perm(i)) + " "
-        return (perm_string)
-    def count_solved_cor(self):
-        solved_corners = 0
-
-        if len(self.current_perm_list) <= 1:
-            return 8
-        for cor in self.corners_numbers:
-            if str(cor) in self.current_perm_list:
-                solved_corners += 1
-
-        return 8 - int(solved_corners/3)
-
-    def count_solve_edges(self):
-        solved_edges = 0
-        if len(self.current_perm_list) <= 1:
-            return 12
-        for edge in self.edges_numbers:
-            if str(edge) in self.current_perm_list:
-                solved_edges += 1
-        return 12 - int(solved_edges/2)
-
     def singlemoveExecute(self, move):
         funcMoves = {
         'R': self.r,
@@ -282,6 +241,64 @@ class Cube:
         'M\'': self.mp,
         'M2': self.m2,
         'M2\'': self.m2,
+        "r": self.rw,
+        'r\'': self.rwp,
+        'r2': self.rw2,
+        'r2\'': self.rw2,
+        "Rw": self.rw,
+        'Rw\'': self.rwp,
+        'Rw2': self.rw2,
+        'Rw2\'': self.rw2,
+        "l": self.lw,
+        'l\'': self.lwp,
+        'l2': self.lw2,
+        'l2\'': self.lw2,
+        "Lw": self.lw,
+        'Lw\'': self.lwp,
+        'Lw2': self.lw2,
+        'Lw2\'': self.lw2,
+        "f": self.fw,
+        'f\'': self.fwp,
+        'f2': self.fw2,
+        'f2\'': self.fw2,
+        "Fw": self.fw,
+        'Fw\'': self.fwp,
+        'Fw2': self.fw2,
+        'Fw2\'': self.fw2,
+        "d": self.dw,
+        'd\'': self.dwp,
+        'd2': self.dw2,
+        'd2\'': self.dw2,
+        "Dw": self.dw,
+        'Dw\'': self.dwp,
+        'Dw2': self.dw2,
+        'Dw2\'': self.dw2,
+        "b": self.bw,
+        'b\'': self.bwp,
+        'b2': self.bw2,
+        'b2\'': self.bw2,
+        "Bw": self.bw,
+        'Bw\'': self.bwp,
+        'Bw2': self.bw2,
+        'Bw2\'': self.bw2,
+        "u": self.uw,
+        'u\'': self.uwp,
+        'u2': self.uw2,
+        'u2\'': self.uw2,
+        "Uw": self.uw,
+        'Uw\'': self.uwp,
+        'Uw2': self.uw2,
+        'Uw2\'': self.uw2,
+        'x': self.x,
+        'x\'': self.xp,
+        'x2': self.x2,
+        'y': self.y,
+        'y\'': self.yp,
+        'y2': self.y2,
+        'z': self.z,
+        'z\'': self.zp,
+        'z2': self.z2,
+
     }
 
         # funcMoves.get('R')()
@@ -289,6 +306,55 @@ class Cube:
         funcMoves.get(move)()
 
 
+
+    def gen_url(self):
+        self.url = "https://www.cubedb.net/?rank=3&title={}&scramble=".format("test")
+        for move in self.scramble.split():
+            if "\'" in move:
+                move.replace("\'", "-")
+            self.url += "{}_".format(move)
+        self.url += "&alg="
+
+        for move in self.solve_stats:
+            if "\'" in move["move"]:
+                move["move"].replace("\'", "-")
+            self.url += "{}_".format(move["move"])
+            if move["comment"] != "":
+                self.url += move["comment"]
+        pyperclip.copy(self.url)
+
+    def perm_to_string(self, perm):
+        perm_string = ""
+        for i in range(1,55):
+            perm_string += str(perm(i)) + " "
+        return (perm_string)
+    def count_solved_cor(self):
+        solved_corners = 0
+
+        if len(self.current_perm_list) <= 1:
+            return 8
+        for cor in self.corners_numbers:
+            if str(cor) in self.current_perm_list:
+                solved_corners += 1
+
+        return 8 - int(solved_corners/3)
+
+    def count_solve_edges(self):
+        solved_edges = 0
+        current_perm_list = self.perm_to_string(self.current_perm).split()
+        # if len(self.current_perm_list) <= 1:
+        #     return 12
+        print("prem : {}\nperm_str : {}\n current_perm_list : {}\n\n".format(self.current_perm, self.perm_to_string(self.current_perm), current_perm_list))
+        print(self.edges_numbers)
+        for edge in self.edges_numbers:
+
+            # if str(edge) in self.current_perm_list:
+            #     solved_edges += 1
+            if current_perm_list[edge - 1] == str(edge):
+                print("list : {} - edge : {}".format(current_perm_list[edge - 1], edge))
+                solved_edges += 1
+
+        return int(solved_edges/2)
 
     def exe_move(self, move):
         self.singlemoveExecute(move)
@@ -321,6 +387,13 @@ def main():
 
     SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
+
+    SCRAMBLE = "y' B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2 y"
+    SOLVE = "R2 D R2' D' R2 U' R2' D R2 D' R2' U L' D2' L U' L' D2' L U U' R' D R U2 R' D' R U' U' R D' R' U R D R' R' U' R' E  R U R' E' R2 l' U' L U r' R U' L' U L U L2 U' M' U L2 U' r' R F U' R' M' r U R U' R' M' r U R' F' L U L E' L' U' L E L2'"
+
+    # SCRAMBLE = "S"
+    # SOLVE = "z F'"
+
     cube = Cube()
     cube.scramble = SCRAMBLE
     cube.solve = SOLVE
@@ -332,29 +405,32 @@ def main():
     if not cube.current_perm.is_even:
         cube.parity = True
         cube.max_edges = 10
+
+
     count = 0
     cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
     cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
-
+    rotations = ['x', 'x\'', 'x2', 'z' , 'z\'' , 'z2' , 'y' , 'y\'', 'y2']
 
 
 
     for move in cube.solve.split():
         count += 1
         cube.exe_move(move)
+        if move in rotations:
+            print("move : {}".format(move))
+            cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.85 : #18:
+        if diff > 0.87 : #18:
             cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
 
-    print("corners : {}, edges : {}".format(cube.count_solved_cor(), cube.count_solve_edges()))
-    print(kociemba.solve(cube.current_facelet[1:], SOLVED[1:]))
     cube.gen_url()
     print(*cube.solve_stats, sep="\n")
 if __name__ == '__main__':
