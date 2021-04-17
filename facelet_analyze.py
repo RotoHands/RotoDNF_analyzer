@@ -3,7 +3,8 @@ import kociemba
 from RotoDNF import DNFanalyzer
 import re
 import pyperclip
-
+from difflib import SequenceMatcher
+import jellyfish
 def ERROR_FUNC():
     print("unknown move: ")
 
@@ -26,6 +27,10 @@ class Cube:
         self.scramble = ""
         self.solve = ""
         self.url = ""
+        self.current_max_perm_list = None
+        self.parity = None
+        self.max_edges = 12
+
         self.current_facelet = ""
         self.R = permutation.Permutation(1, 2, 21, 4, 5, 24, 7, 8, 27, 16, 13, 10, 17, 14, 11, 18, 15, 12, 19, 20, 30, 22, 23, 33, 25, 26, 36, 28, 29, 52, 31, 32, 49, 34, 35, 46, 37, 38, 39, 40, 41,42, 43, 44, 45, 9, 47, 48, 6, 50, 51, 3, 53, 54).inverse()
         self.RP = self.R.inverse()
@@ -47,6 +52,9 @@ class Cube:
         self.F2 = self.F * self.F
 
 
+    def diff_states(self, perm_list):
+        # return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
+        return jellyfish.levenshtein_distance(self.current_max_perm_list, perm_list)
 
 
 
@@ -187,29 +195,37 @@ def main():
     SOLVED = "0UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
     MISTAKE_SOLVE_CORNERS = "D D U' R' U' D B2 U D' R' U D' D' U' D B' U D' R U' R' U' D B U2 D' U' R' L F R' L D2 R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U2 R D R' U U R D' R' R' R U R D' R' U' R D R' R' R R R D D U' R'"
     SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
-    SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
-    SCRAMBLE = "B2 F2 U2 F2 D' R2 U' L2 D L2 F2 B' R' U B2 R D' L B U'"
     SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
+
+    # SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
+    # SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
     cube = Cube()
     cube.scramble = SCRAMBLE
     cube.solve = SOLVE
     cube.current_facelet = SOLVED
     SCRAMBLE_LIST = SCRAMBLE.split()
-    count = -1
     for move in SCRAMBLE_LIST:
         cube.exe_move(move)
-    max_solved = cube.count_solved_cor() + cube.count_solve_edges()
+    max_solved = cube.count_solve_edges()
+    if not cube.current_perm.is_even:
+        cube.parity = True
+        cube.max_edges = 10
+    count = 0
+    cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
+    cube.current_max_perm_list = cube.current_perm.__str__()
     for move in cube.solve.split():
         count += 1
         cube.exe_move(move)
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
-        solved = solved_cor + solved_edges
-        if solved > max_solved:
-            max_solved = solved
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor)})
+        diff = cube.diff_states(cube.current_perm.__str__())
+        # max_solved = solved_edges if
+        # if diff > 0.8 or diff < 0.1: #sequence matcher
+        if diff < 30:
+            cube.current_max_perm_list = cube.current_perm.__str__()
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.current_perm.__str__()})
         else:
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : ""})
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.current_perm.__str__()})
 
     print("corners : {}, edges : {}".format(cube.count_solved_cor(), cube.count_solve_edges()))
     print(kociemba.solve(cube.current_facelet[1:], SOLVED[1:]))
