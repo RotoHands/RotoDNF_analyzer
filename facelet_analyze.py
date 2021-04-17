@@ -396,9 +396,31 @@ class Cube:
         return last_solved_pieces
 
     def parse_solved_to_comm(self):
+        print(self.last_solved_pieces)
+        comm = []
+        if self.buffer_ed in self.last_solved_pieces:
+            comm.append(self.buffer_ed)
+            current_num = self.last_solved_pieces[self.buffer_ed][0]
+            while True:
+                for i in self.last_solved_pieces:
+                    if self.last_solved_pieces[i][1] == current_num:
+                        current_num = self.last_solved_pieces[i][0]
+                        comm.append(i)
+                if current_num == self.last_solved_pieces[self.buffer_ed][1]:
+                    break
 
-        pass
-
+        if self.buffer_cor in self.last_solved_pieces:
+            comm.append(self.buffer_cor)
+            current_num = self.last_solved_pieces[self.buffer_cor][0]
+            while True:
+                for i in self.last_solved_pieces:
+                    if self.last_solved_pieces[i][1] == current_num:
+                        current_num = self.last_solved_pieces[i][0]
+                        comm.append(i)
+                if current_num == self.last_solved_pieces[self.buffer_cor][1]:
+                    break
+        for i in range(len(comm)):
+            comm[i] = self.dict_stickers[comm[i]]
 
     def exe_move(self, move):
         self.singlemoveExecute(move)
@@ -502,7 +524,8 @@ def main():
         if diff > 0.85 and (count - max_piece_place > 8): #18:
             max_piece_place = count
             cube.last_solved_pieces = cube.diff_solved_state()
-            print("count : {} : {}".format(count, cube.last_solved_pieces))
+            # cube.parse_solved_to_comm()
+            # print("count : {} : {}".format(count, cube.last_solved_pieces))
             cube.current_max_perm_list = cube.current_perm
 
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
