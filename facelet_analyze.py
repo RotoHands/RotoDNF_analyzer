@@ -385,9 +385,9 @@ class Cube:
     def diff_solved_state(self):
         last = self.current_max_perm_list
         current = self.current_perm
+        print("last : {}\ncurr : {}\n\n".format(last, current))
         last = self.perm_to_string(last.inverse()).split()
         current = self.perm_to_string(current.inverse()).split()
-
         last_solved_pieces = {}
         for i in range (0,54):
             if (last[i] != current[i]):
@@ -399,6 +399,7 @@ class Cube:
         print(self.last_solved_pieces)
         comm = []
         if self.buffer_ed in self.last_solved_pieces:
+            print("edges")
             comm.append(self.buffer_ed)
             current_num = self.last_solved_pieces[self.buffer_ed][0]
             while True:
@@ -408,11 +409,12 @@ class Cube:
                         comm.append(i)
                 if current_num == self.last_solved_pieces[self.buffer_ed][1]:
                     break
-
         if self.buffer_cor in self.last_solved_pieces:
+            print("corners")
             comm.append(self.buffer_cor)
             current_num = self.last_solved_pieces[self.buffer_cor][0]
             while True:
+                print(comm)
                 for i in self.last_solved_pieces:
                     if self.last_solved_pieces[i][1] == current_num:
                         current_num = self.last_solved_pieces[i][0]
@@ -421,6 +423,7 @@ class Cube:
                     break
         for i in range(len(comm)):
             comm[i] = self.dict_stickers[comm[i]]
+        print(comm)
 
     def exe_move(self, move):
         self.singlemoveExecute(move)
@@ -480,10 +483,9 @@ def main():
 
     SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
-    # SCRAMBLE = " U L' L' R' R U' R' L F L' L' F' R L'"
+    SCRAMBLE = "R' D R U2 R' D' R U2"
     # SCRAMBLE = "B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2"
-    # SOLVE = "y R2 D R2' D' R2 U' R2' D R2 D' R2' U L' D2' L U' L' D2' L U U' R' D R U2 R' D' R U' U' R D' R' U R D R' R' U' R' E  R U R' E' R2 l' U' L U r' R U' L' U L U L2 U' M' U L2 U' r' R F U' R' M' r U R U' R' M' r U R' F' L U L E' L' U' L E L2'"
-
+    SOLVE = "U2 R' D R U2 R' D' R"
     # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw'"
     # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
 
@@ -512,20 +514,22 @@ def main():
         cube.exe_move(exe_move)
         count += 1
         # print("{} : {}".format(move, exe_move))
-        # if move in cube.rotation:
+        if move in cube.rotation:
+            print(cube.current_perm)
         #     print("move : {}".format(move))
-        #     cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
+            cube.current_max_perm_list = cube.current_perm
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
 
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.85 and (count - max_piece_place > 8): #18:
+        if diff > 0.85 and (count - max_piece_place > 6): #18:
             max_piece_place = count
             cube.last_solved_pieces = cube.diff_solved_state()
-            cube.parse_solved_to_comm()
             # print("count : {} : {}".format(count, cube.last_solved_pieces))
+
+            cube.parse_solved_to_comm()
             cube.current_max_perm_list = cube.current_perm
 
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
