@@ -396,7 +396,6 @@ class Cube:
         return last_solved_pieces
 
     def parse_solved_to_comm(self):
-        print(self.last_solved_pieces)
         comm = []
         if self.buffer_ed in self.last_solved_pieces:
             print("edges")
@@ -427,8 +426,26 @@ class Cube:
                     if current_num == self.last_solved_pieces[self.buffer_cor][1]:
                         flag = True
                         break
+
+        if self.buffer_cor not in self.last_solved_pieces and self.buffer_ed not in self.last_solved_pieces:
+            temp_buffer = next(iter(self.last_solved_pieces))
+            comm.append(temp_buffer)
+            current_num = self.last_solved_pieces[temp_buffer][0]
+            flag = False
+            while not flag:
+                print(comm)
+                for i in self.last_solved_pieces:
+                    if self.last_solved_pieces[i][1] == current_num:
+                        current_num = self.last_solved_pieces[i][0]
+                        comm.append(i)
+                    print("current num : {}".format(current_num))
+                    if current_num == self.last_solved_pieces[temp_buffer][1]:
+                        flag = True
+                        break
+
         for i in range(len(comm)):
             comm[i] = self.dict_stickers[comm[i]]
+
         return comm
 
     def exe_move(self, move):
@@ -487,7 +504,7 @@ def main():
     # SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
     # SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
 
-    SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
+    SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
     # SCRAMBLE = "R' D R U2 R' D' R U2"
     # SCRAMBLE = "B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2"
@@ -530,15 +547,15 @@ def main():
 
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.85 and (count - max_piece_place > 6): #18:
+        if diff > 0.87 and (count - max_piece_place > 6): #18:
             max_piece_place = count
             cube.last_solved_pieces = cube.diff_solved_state()
             # print("count : {} : {}".format(count, cube.last_solved_pieces))
 
-            cube.parse_solved_to_comm()
+            comm = cube.parse_solved_to_comm()
             cube.current_max_perm_list = cube.current_perm
 
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//{}%0A".format(" ".join(comm)),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
 
