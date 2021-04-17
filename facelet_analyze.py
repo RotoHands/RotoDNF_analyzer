@@ -436,7 +436,7 @@ def main():
     cube.solve_helper = SOLVE
     cube.current_facelet = SOLVED
     SCRAMBLE_LIST = SCRAMBLE.split()
-    cube.apply_rotation("y")
+    # cube.apply_rotation("y")
     print("here {}".format(cube.solve_helper))
     for move in SCRAMBLE_LIST:
         cube.exe_move(move)
@@ -462,7 +462,7 @@ def main():
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.80 : #18:
+        if diff > 0.85 : #18:
             cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
