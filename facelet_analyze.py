@@ -5,6 +5,8 @@ import re
 import pyperclip
 from difflib import SequenceMatcher
 import jellyfish
+
+
 def ERROR_FUNC():
     print("unknown move: ")
 
@@ -26,10 +28,12 @@ class Cube:
         self.current_perm = self.solved_perm
         self.scramble = ""
         self.solve = ""
+        self.solve_helper = ""
         self.url = ""
         self.current_max_perm_list = None
         self.parity = None
         self.max_edges = 12
+        self.rotation = ['x', 'x\'', 'x2', 'z', 'z\'', 'z2', 'y', 'y\'', 'y2']
 
         self.current_facelet = ""
         self.R = permutation.Permutation(1, 2, 21, 4, 5, 24, 7, 8, 27, 16, 13, 10, 17, 14, 11, 18, 15, 12, 19, 20, 30, 22, 23, 33, 25, 26, 36, 28, 29, 52, 31, 32, 49, 34, 35, 46, 37, 38, 39, 40, 41,42, 43, 44, 45, 9, 47, 48, 6, 50, 51, 3, 53, 54).inverse()
@@ -59,6 +63,11 @@ class Cube:
         self.E = permutation.Permutation(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 22, 23, 24, 16, 17, 18, 19, 20, 21, 40, 41, 42, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 49, 50, 51, 43, 44, 45, 46, 47, 48, 13, 14, 15, 52, 53, 54).inverse()
         self.EP = self.E.inverse()
         self.E2 = self.E * self.E
+
+
+
+
+
     def diff_states(self, perm_list):
         return SequenceMatcher(None, self.current_max_perm_list, perm_list).ratio()
 
@@ -344,14 +353,14 @@ class Cube:
         current_perm_list = self.perm_to_string(self.current_perm).split()
         # if len(self.current_perm_list) <= 1:
         #     return 12
-        print("prem : {}\nperm_str : {}\n current_perm_list : {}\n\n".format(self.current_perm, self.perm_to_string(self.current_perm), current_perm_list))
-        print(self.edges_numbers)
+        # print("prem : {}\nperm_str : {}\n current_perm_list : {}\n\n".format(self.current_perm, self.perm_to_string(self.current_perm), current_perm_list))
+        # print(self.edges_numbers)
         for edge in self.edges_numbers:
 
             # if str(edge) in self.current_perm_list:
             #     solved_edges += 1
             if current_perm_list[edge - 1] == str(edge):
-                print("list : {} - edge : {}".format(current_perm_list[edge - 1], edge))
+                # print("list : {} - edge : {}".format(current_perm_list[edge - 1], edge))
                 solved_edges += 1
 
         return int(solved_edges/2)
@@ -378,6 +387,33 @@ class Cube:
 
         self.current_facelet = "{}{}".format("0",''.join(facelet[1:]))
 
+    def y_rotation(self):
+        solve = self.solve_helper.translate(str.maketrans('RrBbLlFfMz', 'BbLlFfRrSx'))
+        solve.replace("S", "M'")
+        solve.replace("x", "z'")
+        solve.replace("''","")
+        self.solve_helper = solve
+
+    def y2_rotation(self):
+        self.y_rotation()
+        self.y_rotation()
+    def yp_rotation(self):
+        self.y2_rotation()
+        self.y_rotation()
+    def apply_rotation(self, rotation):
+        funcMoves = {
+            "y" : self.y_rotation,
+            "yp" : self.yp_rotation,
+            "y2" : self.y2_rotation
+    }
+        funcMoves.get(rotation)()
+
+    def parse_rotations(self):
+
+        solve_move_list = self.solve.split()
+        for move in solve_move_list:
+            if move in self.rotations:
+                self.apply_rotation(move)
 
 def main():
     SOLVED = "0UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
@@ -388,17 +424,20 @@ def main():
     SOLVE = "U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
     SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
 
-    SCRAMBLE = "y' B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2 y"
-    SOLVE = "R2 D R2' D' R2 U' R2' D R2 D' R2' U L' D2' L U' L' D2' L U U' R' D R U2 R' D' R U' U' R D' R' U R D R' R' U' R' E  R U R' E' R2 l' U' L U r' R U' L' U L U L2 U' M' U L2 U' r' R F U' R' M' r U R U' R' M' r U R' F' L U L E' L' U' L E L2'"
+    # SCRAMBLE = "B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2"
+    # SOLVE = "y R2 D R2' D' R2 U' R2' D R2 D' R2' U L' D2' L U' L' D2' L U U' R' D R U2 R' D' R U' U' R D' R' U R D R' R' U' R' E  R U R' E' R2 l' U' L U r' R U' L' U L U L2 U' M' U L2 U' r' R F U' R' M' r U R U' R' M' r U R' F' L U L E' L' U' L E L2'"
 
-    # SCRAMBLE = "S"
-    # SOLVE = "z F'"
+    # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw'"
+    # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
 
     cube = Cube()
     cube.scramble = SCRAMBLE
     cube.solve = SOLVE
+    cube.solve_helper = SOLVE
     cube.current_facelet = SOLVED
     SCRAMBLE_LIST = SCRAMBLE.split()
+    cube.apply_rotation("y")
+    print("here {}".format(cube.solve_helper))
     for move in SCRAMBLE_LIST:
         cube.exe_move(move)
     max_solved = cube.count_solve_edges()
@@ -406,26 +445,24 @@ def main():
         cube.parity = True
         cube.max_edges = 10
 
-
     count = 0
     cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
     cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
-    rotations = ['x', 'x\'', 'x2', 'z' , 'z\'' , 'z2' , 'y' , 'y\'', 'y2']
-
-
 
     for move in cube.solve.split():
+        exe_move = cube.solve_helper.split()[count]
+        cube.exe_move(exe_move)
         count += 1
-        cube.exe_move(move)
-        if move in rotations:
-            print("move : {}".format(move))
-            cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
+        print("{} : {}".format(move, exe_move))
+        # if move in cube.rotation:
+        #     print("move : {}".format(move))
+        #     cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
         # max_solved = solved_edges if
         # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.87 : #18:
+        if diff > 0.80 : #18:
             cube.current_max_perm_list = cube.perm_to_string(cube.current_perm)
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//e : {}, c : {}%0A".format(solved_edges, solved_cor),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
