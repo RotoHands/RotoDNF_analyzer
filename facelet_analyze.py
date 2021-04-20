@@ -444,8 +444,8 @@ class Cube:
                         break
 
         for i in range(len(comm)):
-            comm[i] = self.dict_lp[self.dict_stickers[comm[i]]]
-
+            # comm[i] = self.dict_lp[self.dict_stickers[comm[i]]]
+            comm[i] = self.dict_stickers[comm[i]]
         return comm
 
     def exe_move(self, move):
@@ -556,7 +556,7 @@ def main():
             comm = cube.parse_solved_to_comm()
             cube.current_max_perm_list = cube.current_perm
 
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//{}%0A".format("".join(comm[1:])),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
+            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//{}%0A".format("_".join(comm[:])),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
         else:
             cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
 
