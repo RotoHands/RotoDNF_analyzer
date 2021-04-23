@@ -58,18 +58,11 @@ async def check():
         pass
 
 async def connect_to_device(address):
-    print("starting", address, "loop")
     notify_uuid = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
     write_uuid = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
     service = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-
-
     async with bleak.BleakClient(address, timeout=20.0) as client:
-        print("connect to", address)
-
         try:
-
-            print(await client.start_notify(14, callback))
             while True:
                 await asyncio.sleep(1)
         except Exception as e:

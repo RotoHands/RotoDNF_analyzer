@@ -14,6 +14,8 @@ import msvcrt as m
 import pyperclip
 import socket
 import kociemba
+from BLD_solve_parse import parse_solve
+
 
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
@@ -59,6 +61,7 @@ class DNFanalyzer:
         self.ws_ui = None
         self.video_time = 0
         self.scramble_moves = []
+        self.solve_moves = []
 
     def resetCube(self):
         self.solving = False
@@ -335,6 +338,7 @@ async def initCube(websocket, path):
                     trainer.data_move_counter = len(trainer.new_moves)
 
                     for move in newMoves:
+                        Cube.solve_moves.append(move)
                         exeMoves.append([move, int(time.time() - Cube.solveTime - diff), 0, 0, moveCount])
                         moveCount += 1
                         moves.append(move)
@@ -347,147 +351,11 @@ async def initCube(websocket, path):
             Cube.frame_rate = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
             Cube.video_time = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
 
-            #finished solve
-            Cube.alg.reset()
-            Cube.alg.executeAlgWithMoves(Cube.scrambleToExe)
-            Cube.alg.reverseSelf()
-            if(Cube.alg.cornerEven() == True):
-                Cube.parity = False
-                print("no parity")
-            else:
-                Cube.parity = True
-                print("parity")
-            for move in exeMoves:
-                Cube.alg.movesToExecute = move[0]
-                Cube.alg.reverseSelf()
-                Cube.alg.executeAlg()
-                Cube.alg.reverseSelf()
-                m = move[0]
-                t = move[1]
-                moveC = move[4]
-                corSol = Cube.alg.countSolvedCor()#correct
-                edSol = Cube.alg.countSolveEdges()#correct
-                Cube.exeMoves.append([m,t,corSol,edSol,moveC])#correct
-            sortedByIndex = Cube.exeMoves.copy()
-            sortedByIndex.reverse()
-            Cube.exeMoves.sort(key=takeEdges, reverse=True)
-            sortedByEdges = Cube.exeMoves.copy()  # works
-            Cube.exeMoves.sort(key=takeCorners, reverse=True)
-            sortedByCorners =  Cube.exeMoves.copy()
-            Cube.solution = sortedByIndex.copy()
+            scramble = Cube.scrambleToExe
+            solve = " ".join(Cube.solve_moves)
+            stats = parse_solve(scramble, solve)
 
-            print("sortedByEdges ", *sortedByEdges, sep="\n")
-            print("sortedByCorners ", *sortedByCorners, sep="\n")
-            print("sortedByIndex ", *sortedByIndex, sep="\n")
-
-            solve = ""
-            sortedByIndex.reverse()
-            for x in sortedByIndex:
-                solve += " " + x[0]
-
-            # solved :works
-            # edges solved, corners not , no parity : works
-            # edges solved corners not, with parity : ???
-            # edges not solved, no paritu :??? - - multiple max edges doesnt work
-            # edges not solved, parity :???
-
-
-            Cube.solution = solve
-            sortedByIndex.reverse()
-            tempSortedIndex = sortedByIndex.copy()
-            sotedByIndexReversed = tempSortedIndex.copy()
-            sotedByIndexReversed.reverse()
-            if(exeOrder == "EdgesCorners"):
-                if(sortedByIndex[0][2] == 8 and sortedByIndex[0][3] == 12):
-                    print("Solved!") # works
-                elif((sortedByEdges[0][3] == 12 and Cube.parity == False) or (sortedByEdges[0][3] >=10 and Cube.parity == True)):# if there is parity' and max edges >= 10 then it means edges are good
-                    print("you solved all edges correctly")
-                    # corners are wrong
-                    maxCornersFullEdges = []
-                    for x in sortedByCorners:
-                        if((x[3] == 12 and Cube.parity == False) or (x[3] >= 10 and Cube.parity == True)):
-                            maxCornersFullEdges.append(x)
-
-                    maxCornersFullEdges.sort(key=takeTime, reverse=True)
-                    print("maxCornersFullEdges ", *maxCornersFullEdges, sep="\n")
-                    if(tempSortedIndex[0][3] != 12):#if all edges are not right at the final state, then take the last time all edges were good( mistake in excecution
-
-                        mistakeMove =  sotedByIndexReversed[maxCornersFullEdges[0][4] + 1]
-                        print ("before : {} \nafter : {}".format(maxCornersFullEdges[0],mistakeMove))
-
-                    else: #take the first time all edges were good (did the wrong Alg)
-                        maxCornersFullEdges.reverse()
-                        mistakeMove = sotedByIndexReversed[maxCornersFullEdges[0][4] + 1]
-                        print ("before : {} \nafter : {}".format(maxCornersFullEdges[0],mistakeMove))
-
-                    Cube.moveWrong = mistakeMove[4]
-                    # Cube.secMistake = round(mistakeMove[1]-Cube.solveTime,2) #the time of the first time you had max corners solved with full edges
-                    Cube.secMistake = mistakeMove[1]
-                    print("mistake time was ",Cube.secMistake  , " seconds from the begining")
-                    print("the last move right  ", mistakeMove[4], "move, which was ", mistakeMove[0][0])
-                    playVid(Cube)
-
-                else: #not all edges are good find the most edges solved
-                    tempSortedIndex = sortedByIndex.copy()
-
-                    max = sortedByEdges[0][3]
-                    maxEdgesSolved = []
-                    for move in sortedByEdges:
-                        if (move[3] == max):
-                            maxEdgesSolved.append(move)
-                    maxEdgesSolved.sort(key=takeTime)
-                    sortedByMaxEdgesTime = maxEdgesSolved.copy()
-                    Cube.moveWrong = sortedByMaxEdgesTime[0][4] + 1
-                    # Cube.secMistake = round(sortedByMaxEdgesTime[0][1]-Cube.solveTime, 2) # max edges solved first time
-                    Cube.secMistake = sotedByIndexReversed[sortedByMaxEdgesTime[0][4] + 1][1]
-                    print("mistake time was ",Cube.secMistake, " seconds from the begining")
-                    print("the last move right  ", sortedByMaxEdgesTime[0][4] + 1, "move, which was ", sotedByIndexReversed[sortedByMaxEdgesTime[0][4] + 1 ][0])
-                    playVid(Cube)
-
-            else:
-                if (sortedByIndex[0][2] == 8 and sortedByIndex[0][3] == 12):
-                    print("Solved!")
-
-                elif ((sortedByCorners[0][2] == 8 and Cube.parity == False) or (sortedByCorners[0][2] >=6 and Cube.parity == True)):
-                    print("you solved all corners correctly")
-                    #not all edges are good
-
-                    maxEdgesFullCorners = []#edges are wrong
-                    for x in sortedByEdges:
-                        if ((x[2] == 8 and Cube.parity == False) or (x[2] >= 6 and Cube.parity == True)):
-                            maxEdgesFullCorners.append(x)
-                    maxEdgesFullCorners.sort(key = takeEdges, reverse=True)  # all moves that edges was max
-                    max = maxEdgesFullCorners[0][2]
-                    maxEdgesSolved = []
-
-                    maxEdgesFullCorners.sort(key=takeTime, reverse=True)
-                    tempSortedIndex = sortedByIndex.copy()
-                    if (tempSortedIndex[0][3] != 8):  # if all edges are not right at the final state, then take the last time all edges were good
-                        mistakeMove = sotedByIndexReversed[maxEdgesFullCorners[0][4] + 1]
-                    else:  # take the first time all edges were good
-                        maxEdgesFullCorners.reverse()
-                        mistakeMove = sotedByIndexReversed[maxEdgesFullCorners[0][4] + 1]
-                    Cube.moveWrong = mistakeMove[4]
-                    sortedByMaxEdgesTime = maxEdgesFullCorners.copy()
-                    Cube.secMistake =round(mistakeMove[1]-Cube.solveTime ,2) # the time of the first time you had max corners solved
-                    print("mistake time was ", Cube.secMistake, " seconds from the begining")
-                    print("last move right ", mistakeMove[4], "move, which was ",
-                          mistakeMove[0])
-
-                    playVid(Cube)
-                else:  # not all corners are good
-                    max = sortedByCorners[0][2]
-                    maxCornersSolved = []
-                    for move in sortedByEdges:
-                        if (move[2] == max):
-                            maxCornersSolved.append(move)
-                    maxCornersSolved.sort(key=takeTime)
-                    sortedByMaxCornersTime = maxCornersSolved.copy()
-                    Cube.moveWrong = sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][4]
-                    Cube.secMistake = sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][1] # the time of the first time you had max corners solved
-                    print("mistake time was ", Cube.secMistake , " seconds from the begining")
-                    print("last move right ", sotedByIndexReversed[sortedByMaxCornersTime[0][4] + 1][4], "move, which was ", sortedByMaxCornersTime[0][4])
-                    playVid(Cube)
+            playVid(Cube)
             saveSolve(Cube)
 
 def main():
