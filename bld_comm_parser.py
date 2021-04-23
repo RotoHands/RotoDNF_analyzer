@@ -72,8 +72,6 @@ def extendAlg(currentAlg):
     B = tempAlg[tempAlg.find(",") + 1:tempAlg.find("]")].strip()
 
     All =[A,B,C]
-
-    print(All)
     return All
 
 def cancel (f,s):
@@ -132,7 +130,6 @@ def cancelAlg(alg):
     return final_alg
 
 def alg_maker(comm_str):
-    temp = ""
     final = ""
     clip = comm_str
     if (clip.find('w') != -1):
@@ -161,25 +158,19 @@ def alg_maker(comm_str):
 
             final = final.replace("  ", " ")
             final = final.strip()
-
-
+        else:
+            return comm_str
     return final
 
-def transposeAndReverseTable(sheet_name):
-    file = openpyxl.load_workbook(r"C:\Users\rotem\PycharmProjects\pythonProject\BLD\ROTO 3bld Algs.xlsx")
-    sheet = file[sheet_name]
-    for i in range (2,23):
-        for j in range(2,i):
 
-            currentAlg = sheet.cell(j,i).value
-            if (currentAlg != None):
-                reverseAlg = reverseAlgCor(currentAlg)
-                sheet.cell(i,j).value = reverseAlg
-                print(currentAlg)
-    file.save(r"C:\Users\rotem\PycharmProjects\pythonProject\BLD\ROTO 3bld Algs.xlsx")
-
-def f1():
-    pyperclip.copy(reverseAlgCor(pyperclip.paste()))
+def solve_parser(solve):
+    solve_split =  solve.split("\r\n")
+    solve = ""
+    for comm in solve_split:
+        if comm.find("/") != -1:
+            comm = comm[:comm.find("/")]
+        solve += " " + str(alg_maker(comm))
+    return solve
 def main():
     pass
 if __name__ == '__main__':

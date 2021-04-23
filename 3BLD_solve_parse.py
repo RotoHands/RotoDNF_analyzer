@@ -1,12 +1,9 @@
 
-from bld_comm_parser import alg_maker
+from bld_comm_parser import solve_parser
 import permutation
-import kociemba
-from RotoDNF import DNFanalyzer
 import re
 import pyperclip
 from difflib import SequenceMatcher
-import jellyfish
 
 
 def ERROR_FUNC():
@@ -325,12 +322,15 @@ class Cube:
         'x': self.x,
         'x\'': self.xp,
         'x2': self.x2,
+        "x2'": self.x2,
         'y': self.y,
         'y\'': self.yp,
         'y2': self.y2,
+        "y2'": self.y2,
         'z': self.z,
         'z\'': self.zp,
         'z2': self.z2,
+        "z2'": self.z2
 
     }
 
@@ -471,11 +471,13 @@ class Cube:
         self.current_facelet = "{}{}".format("0",''.join(facelet[1:]))
 
     def y_rotation(self):
-        solve = self.solve_helper.translate(str.maketrans('RrBbLlFfMz', 'BbLlFfRrSx'))
-        solve.replace("S", "M'")
-        solve.replace("x", "z'")
-        solve.replace("''","")
-        self.solve_helper = solve
+
+        before = ('R','r', 'B', 'b', 'L', 'l','F','f','M' , 'z' ,'S', 'x')
+        after =  ('B','b', 'L', 'l', 'F', 'f','R','r','S' , 'x' ,"M'", "z'")
+        solve = self.solve_helper.maketrans(dict(zip(before, after)))
+        solve_trans = self.solve_helper.translate(solve)
+        solve_trans = solve_trans.replace("\'\'","")
+        self.solve_helper = solve_trans
 
     def y2_rotation(self):
         self.y_rotation()
@@ -483,11 +485,52 @@ class Cube:
     def yp_rotation(self):
         self.y2_rotation()
         self.y_rotation()
+
+    def x_rotation(self):
+
+        before = ('U', 'u', 'F', 'f', 'D', 'd', 'B', 'b', 'S', 'E', 'y', 'z')
+        after  = ('F', 'f', 'D', 'd', 'B', 'b', 'U', 'u', 'E', 'S\'', "z", "y'")
+        solve = self.solve_helper.maketrans(dict(zip(before, after)))
+        solve_trans = self.solve_helper.translate(solve)
+        solve_trans = solve_trans.replace("\'\'", "")
+        self.solve_helper = solve_trans
+
+    def x2_rotation(self):
+        self.x_rotation()
+        self.x_rotation()
+
+    def xp_rotation(self):
+        self.x2_rotation()
+        self.x_rotation()
+
+    def z_rotation(self):
+
+        before = ('R', 'r', 'U', 'u', 'L', 'l', 'D', 'd', 'M', 'E', 'x', 'y')
+        after  = ('U', 'u', 'L', 'l', 'D', 'd', 'R', 'r', 'E', 'M\'', "y", "x'")
+        solve = self.solve_helper.maketrans(dict(zip(before, after)))
+        solve_trans = self.solve_helper.translate(solve)
+        solve_trans = solve_trans.replace("\'\'", "")
+        self.solve_helper = solve_trans
+
+    def z2_rotation(self):
+        self.z_rotation()
+        self.z_rotation()
+
+    def zp_rotation(self):
+        self.z2_rotation()
+        self.z_rotation()
+
     def apply_rotation(self, rotation):
         funcMoves = {
             "y" : self.y_rotation,
-            "yp" : self.yp_rotation,
-            "y2" : self.y2_rotation
+            "y'" : self.yp_rotation,
+            "y2" : self.y2_rotation,
+            "x": self.x_rotation,
+            "x'": self.xp_rotation,
+            "x2": self.x2_rotation,
+            "z": self.z_rotation,
+            "z'": self.zp_rotation,
+            "z2": self.z2_rotation
     }
         funcMoves.get(rotation)()
 
@@ -498,70 +541,62 @@ class Cube:
             if move in self.rotations:
                 self.apply_rotation(move)
 
-def main():
-    SOLVED = "0UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
-    MISTAKE_SOLVE_CORNERS = "D D U' R' U' D B2 U D' R' U D' D' U' D B' U D' R U' R' U' D B U2 D' U' R' L F R' L D2 R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U2 R D R' U U R D' R' R' R U R D' R' U' R D R' R' R R R D D U' R'"
-    # SOLVE = "D U' D R' U' D B B U D' R' D' U D' U' D B' U D' R U' R' U' D B U D' U U' R' L F R' L D' D' R L' F R L' U D' F U' D R' U' R U D' F' U D R' L F R F B' D' D' F' B R F' L' R L' U L U' R' L F L' F' R R U U R D R' U2 R D' R' R' R U R D' R' U' R D R' R' R' U D' R' D R U' R' D' R D R D' L' D L D' L' D R' D' L D L' D' L D R"
-    # SCRAMBLE = "B2 F2 U2 F2 D R2 U' L2 D L2 F2 B' R' U B2 D R D' L B U'"
+def parse_solve(scramble, solve):
+    solve = solve_parser(solve)
 
-    SOLVE = " U L' L' R' R U' R' L F L' L' F' R L' R' L F R' F' L' R U R U' F B' U F' U' F' B L F L' U U' R' U' R' U' D B B D' U R' U R U' D F' U F U D' L' U' L D R L' F R' L D R L' F R' L R' U D' F U' F' U' D R U U' R' R' D' R U U R' D R U U R U U D' R U' R' D R U R' U' U D U R' D R U2 R' D' R D' U D R' D' R U' R' D R D' R U R' F' R U R' U' R' F R R U' R' U'"
-    SCRAMBLE = "L2 U R2 F2 R2 B2 D2 U F2 U L2 R B L' F D L' D' L2 F2 U'"
-    # SCRAMBLE = "R' D R U2 R' D' R U2"
-    # SCRAMBLE = "B F2 U2 L2 R2 D B U2 F R' D U' B2 L D' R' D2 R2"
-    # SOLVE = "U2 R' D R U2 R' D' R"
-    # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw'"
-    # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
-    # SCRAMBLE = "U' B2 R2 D2 F2 U R2 D U' F R D B2 D2 L' F2 U R2 B2 D2 Rw' "
-    # SOLVE = "x M' U' M' U' M U' M' U' M2' U' L' U' L' U L U L U L' l' U' l' E' l2' E' l' U l U' R' F' R S R' F R S' U D R' U R D' R' U2 R D R' U R D' U' R2' D' R U' R' D R U R U U' R U' R' D R U R' D' U U D' R' U' R D' R' U R D2 U'"
+    SOLVED = "0UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB"
     cube = Cube()
-    cube.scramble = SCRAMBLE
-    cube.solve = SOLVE
-    cube.solve_helper = SOLVE
+    cube.scramble = scramble
+    cube.solve = solve
+    cube.solve_helper = solve
     cube.current_facelet = SOLVED
-    SCRAMBLE_LIST = SCRAMBLE.split()
-    # cube.apply_rotation("y")
+    SCRAMBLE_LIST = scramble.split()
     for move in SCRAMBLE_LIST:
         cube.exe_move(move)
-    max_solved = cube.count_solve_edges()
-    if not cube.current_perm.is_even:
-        cube.parity = True
-        cube.max_edges = 10
-
     count = 0
-    max_piece_place = 0
     cube.solve_stats.append({"count": count, "move": "", "ed": cube.count_solve_edges(), "cor": cube.count_solved_cor(), "comment": ""})
     cube.current_max_perm_list = (cube.current_perm)
-
-    for move in cube.solve.split():
-        # exe_move = cube.solve_helper.split()[count]
-        exe_move = move
-        cube.exe_move(exe_move)
+    move_in_solve = cube.solve.split()
+    max_piece_place = 0
+    for move in move_in_solve:
+        original_move = move
+        exe_move = cube.solve_helper.split()[count]
         count += 1
-        # print("{} : {}".format(move, exe_move))
         if move in cube.rotation:
-            print(cube.current_perm)
-        #     print("move : {}".format(move))
-            cube.current_max_perm_list = cube.current_perm
-        solved_edges =  cube.count_solve_edges()
-        solved_cor = cube.count_solved_cor()
-        diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
+            cube.exe_move(exe_move)
+            # cube.current_max_perm_list = (cube.current_perm)
+            solved_edges =  cube.count_solve_edges()
+            solved_cor = cube.count_solved_cor()
+            diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
+            cube.solve_stats.append(
+                {"count": count, "move": original_move, "ed": solved_edges, "cor": solved_cor, "comment": "",
+                 "diff": diff, "perm": cube.perm_to_string(cube.current_perm)})
 
-        # max_solved = solved_edges if
-        # if diff > 0.8 or diff < 0.1: #sequence matcher
-        if diff > 0.87 and (count - max_piece_place > 6): #18:
-            max_piece_place = count
-            cube.last_solved_pieces = cube.diff_solved_state()
-            # print("count : {} : {}".format(count, cube.last_solved_pieces))
-
-            comm = cube.parse_solved_to_comm()
-            cube.current_max_perm_list = cube.current_perm
-
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//{}%0A".format("_".join(comm[:])),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
+            # cube.apply_rotation(exe_move)
+            # revese_rotation = ("{}'".format(exe_move)).replace("''","")
+            # print(revese_rotation)
+            # cube.exe_move(revese_rotation)
+            cube.current_max_perm_list = (cube.current_perm)
         else:
-            cube.solve_stats.append({"count" : count,"move": move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
+            cube.exe_move(exe_move)
+            solved_edges =  cube.count_solve_edges()
+            solved_cor = cube.count_solved_cor()
+            diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
 
+            # max_solved = solved_edges if
+            # if diff > 0.8 or diff < 0.1: #sequence matcher
+            if diff > 0.89 and (count - max_piece_place > 4): #18:
+                max_piece_place = count
+                cube.last_solved_pieces = cube.diff_solved_state()
+                comm = cube.parse_solved_to_comm()
+                cube.current_max_perm_list = cube.current_perm
+                cube.solve_stats.append({"count" : count,"move": original_move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "//{}%0A".format("_".join(comm[:])),  "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
+            else:
+                cube.solve_stats.append({"count" : count,"move": original_move, "ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff, "perm" : cube.perm_to_string(cube.current_perm)})
     cube.gen_url()
-    print(*cube.solve_stats, sep="\n")
-    print(alg_maker(" [R' S' R, F] "))
+    return cube
+
+def main():
+    pass
 if __name__ == '__main__':
     main()
