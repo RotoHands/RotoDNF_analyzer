@@ -3,19 +3,19 @@ from bleak import BleakClient
 import openpyxl
 import keyboard
 import websockets
-import webbrowser
+import pickle
+from datetime import datetime
 from  algClass import Alg
 import os
 import subprocess
 import time
 import asyncio
 from trainer import Trainer, get_new_moves
-import msvcrt as m
 import pyperclip
 import socket
 import kociemba
-from BLD_solve_parse import parse_solve
-
+from dotenv import load_dotenv
+from BLD_solve_parse import parse_solve, parse_smart_cube_solve, parse_url
 
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
@@ -85,6 +85,8 @@ class DNFanalyzer:
         self.solution = ""
         self.moveWrong = 0
         self.scramble_moves = []
+        self.solve_moves = []
+        self.solve_stats = []
 
     async def send_ui(self, field, msg):
         data_to_ui = json.dumps({field:msg})
@@ -247,7 +249,7 @@ async def get_state(Cube, trainer):
 
 async def scramble_cube(Cube, trainer):
 
-    print("hereeee")
+    print("next_solve")
     trainer.facelet_last_string = ""
     trainer.facelet_current_state = ""
     Cube.facelet_moves = ""
@@ -287,6 +289,52 @@ async def scramble_cube(Cube, trainer):
                     Cube.scramble = False
             # trainer.new_moves = []
         # trainer.data_move_counter = trainer.data[12]
+
+
+def parse_to_algs_time(stats, exe_moves):
+
+    mistake_sec = -1
+    stats[0]["time"] = 0.0
+    for i in range (1,len(stats)):
+        stats[i]["time"] = exe_moves[stats[i]["count"] - 1][1]
+        if "diff_moves" in stats[i]:
+            current = stats[i]["time"]
+            first = stats[i - stats[i]["diff_moves"]]["time"]
+            time_exe = round(current - stats[1 + i - stats[i]["diff_moves"]]["time"], 2)
+            time_alg = round(current - first ,2)
+            time_pause = round(time_alg - time_exe, 2)
+            alg_str = []
+            for j in range(stats[i - stats[i]["diff_moves"]]["count"] + 1, i + 1):
+                # print(stats[j]["move"])
+                alg_str.append(stats[j]["move"])
+            alg_str = " ".join(alg_str)
+            stats[i]["alg_stats"] = {"time_alg" : time_alg, "exe" : time_exe, "pause" :  time_pause, "alg_str" :  alg_str}
+            stats[i]["alg_stats"]["comment"]  = stats[i]["comment"]
+            stats[i]["alg_stats"]["piece"] = stats[i]["piece"]
+        if "mistake" in stats[i]["comment"]:
+            mistake_sec = exe_moves[stats[i]["count"]][1]
+    algs = []
+    for move in stats:
+        if "diff_moves" in move:
+            if "mistake" not in move["comment"]:
+                algs.append([move["alg_stats"]])
+
+    return (algs, mistake_sec)
+
+def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
+        load_dotenv()  # load .env variable
+        cube = parse_solve(SCRAMBLE, SOLVE)
+        cube.time_solve = CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime
+        cube.name_of_solve = "{} : {}".format(cube.time_solve, time.ctime())
+        with open ("failure_pkl.pkl", "wb") as f:
+            pickle.dump([cube.solve_stats, exe_moves],f)
+        algs_time, mistake_sec = parse_to_algs_time(cube.solve_stats, exe_moves)
+        if cube.smart_cube:
+            cube = parse_smart_cube_solve(cube)
+        solve_str = cube.url
+        pyperclip.copy(solve_str)
+        return (solve_str, cube.solve_stats,algs_time, mistake_sec)
+
 async def initCube(websocket, path):
 
     Cube = DNFanalyzer()
@@ -300,9 +348,7 @@ async def initCube(websocket, path):
     async with BleakClient(trainer.rubiks1_addr, timeout=20.0) as trainer.ble_server:
         if trainer.rubiks == True:
             await trainer.ble_server.start_notify(14, trainer.callback)
-
         while True:
-
             Cube.resetCube()
             Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
             Cube.alg.executeAlg()
@@ -339,7 +385,7 @@ async def initCube(websocket, path):
 
                     for move in newMoves:
                         Cube.solve_moves.append(move)
-                        exeMoves.append([move, int(time.time() - Cube.solveTime - diff), 0, 0, moveCount])
+                        exeMoves.append([move, round((time.time() - Cube.solveTime - diff),2), moveCount])
                         moveCount += 1
                         moves.append(move)
                         await Cube.send_ui("moves",moves_to_string(moves))
@@ -353,14 +399,19 @@ async def initCube(websocket, path):
 
             scramble = Cube.scrambleToExe
             solve = " ".join(Cube.solve_moves)
-            stats = parse_solve(scramble, solve)
+            openPath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos', str(Cube.scrambleRow), ".mkv")
 
+            solve_str, solve_stats, algs_time, mistake_sec = parse_solve_main(scramble, solve, exeMoves,Cube)
+            Cube.secMistake = mistake_sec
+            with open ("solves.pkl", "rb") as f:
+                solves = pickle.load(f)
+                solves.append({"date" : datetime.now(),"solve_time" : Cube.memoTime + Cube.exeTime,"memo_time" :  Cube.memoTime, "exe_time" :  Cube.exeTime, "fail_reason" : Cube.fail_reason,"algs_time" : algs_time,  "video_path" : openPath, "scramble" : Cube.scrambleToExe, "solve" :  solve_str, "stats" : solve_stats, "mistake_sec" : mistake_sec})
+            with open ("solves.pkl", "wb") as f:
+                pickle.dump(solves, f)
             playVid(Cube)
-            saveSolve(Cube)
 
 def main():
-    start_server = websockets.serve(initCube, "127.0.0.1", 56789)
-    #TODO: fix parity,  use ffmpeg to add metadata of mistakes, trace alg solved and theit times --> to trainer,
+    start_server = websockets.serve(initCube, "127.0.0.1", 5678)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
     loop.run_forever()

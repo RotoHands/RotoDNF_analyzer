@@ -8,17 +8,13 @@ def playVideo():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((IP, PORT))
     server.listen(1)
-    print("here 1")
     session_socket, client_socket_name = server.accept()
     session_socket.send(bytearray("start", 'utf-8'))
-    print("here 2")
-
     data = session_socket.recv(1024).decode('utf-8').split(":")
     sec_mistake = int(float(data[0]))
     row = int(data[1])
     frame_rate = int(float(data[2]))
     video_time = int(float(data[3]))
-    print("here 3")
 
     with open("log.txt", "w") as f:
         f.write("{},{} : {},{} : {},{} : {},{}".format(video_time, type(video_time), sec_mistake, type(sec_mistake), row, type(row) , frame_rate , type(frame_rate)))
@@ -34,14 +30,15 @@ def playVideo():
     m = 0
     e = 0
     t = 0
+    n = 0
     corrected = False
     while(cap1.isOpened()):
         ret, frame = cap1.read()
         if(ret == True):
             # print(cap1.get(cv2.CAP_PROP_POS_MSEC)
             res = cv2.resize(frame, (640,480))
-            cv2.imshow('frame',res)
-            cv2.moveWindow('frame', 210, 20)
+            cv2.imshow('m: memo, e: exe, t: trace, n:no',res)
+            cv2.moveWindow('m: memo, e: exe, t: trace, n:no', 210, 20)
 
             if cv2.waitKey(30)& 0xFF == ord(' '):
                 break
@@ -60,7 +57,7 @@ def playVideo():
                 if (c3 >= times):
                     c3 = 0
                     cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec_mistake * 1000-500, 2))
-            # memo : m, trace : t, execution : e
+            # memo : m, trace : t, execution : e, no_error : n
 
             if (keyboard.is_pressed('m') == True):
                 m += 1
@@ -80,6 +77,12 @@ def playVideo():
                     session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "exe_error"),'utf-8'))
                     corrected = True
                     print("exe_errrrror")
+                    break
+            if (keyboard.is_pressed('n') == True):
+                n += 1
+                if (n >= times):
+                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "no_error"),'utf-8'))
+                    corrected = True
                     break
 
         else:

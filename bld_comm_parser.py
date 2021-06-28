@@ -2,6 +2,51 @@ import time
 import keyboard
 import pyperclip
 import openpyxl
+
+def fix_UD(alg):
+    split_alg = alg.split()
+    fixed_alg = ""
+    for sp in split_alg:
+        if 'U' in sp and 'D' in sp:
+            D_index = sp.find('D')
+            U_index = sp.find('U')
+            if U_index > D_index:
+                fixed_alg += sp[:U_index] + " "
+                fixed_alg += sp[U_index:] + " "
+            else:
+                fixed_alg += sp[:D_index] + " "
+                fixed_alg += sp[D_index:] + " "
+
+        else:
+            fixed_alg += sp + " "
+    return fixed_alg
+
+
+
+def parse_with_2_algs(alg):
+    if ")2" in alg:
+        rep = 2
+        index = alg.find(")2")
+        repet = alg[alg.find("(") + 1: alg.find(")2")]
+    elif ")3" in alg :
+        rep = 3
+        index = alg.find(")3")
+        repet = alg[alg.find("(") + 1: alg.find(")3")]
+
+    elif ")4" in alg :
+        rep = 4
+        index = alg.find(")4")
+        repet = alg[alg.find("(") + 1: alg.find(")4")]
+    else:
+        return alg
+    temp = []
+    for i in range(rep):
+        temp.append(repet)
+    repet = " ".join(temp)
+    final_alg = alg[:alg.find("(")] + repet + alg[index + 2 :]
+    final_alg = final_alg.replace(":", ",")
+    return final_alg
+
 def removeSlesh(alg):
     if (alg[0] == '[' and alg[len(alg) - 1] == ']' and alg.count("[" )> 1):
         tempAlg = alg[:-1]
@@ -58,7 +103,6 @@ def makeAlg(All, nested = False):
         alg = A + B + Arev
     else:
         alg = C + A + B + Arev +  Brev + Crev
-
     return alg
 
 def extendAlg(currentAlg):
@@ -94,7 +138,7 @@ def cancel (f,s):
     if(sum == -1 or sum == 3):
         return f[0] + "\'"
 
-def reverseAlgCor(alg):
+def reverse_alg(alg):
     reversealg =""
     algsplit = alg.split()
     algsplit.reverse()
@@ -129,9 +173,16 @@ def cancelAlg(alg):
             final_alg.append(move)
     return final_alg
 
+
 def alg_maker(comm_str):
     final = ""
-    clip = comm_str
+    parse = parse_with_2_algs(comm_str)
+    parse = parse_with_2_algs(parse)
+    parse = parse_with_2_algs(parse)
+    clip = fix_UD(parse)
+    replace_chars = ["(", ")"]
+    for ch in replace_chars:
+        clip = clip.replace(ch, "")
     if (clip.find('w') != -1):
         wide_move = clip[clip.index('w')-1]
         alg = clip.replace(wide_move + 'w', wide_move.lower())
@@ -159,18 +210,24 @@ def alg_maker(comm_str):
             final = final.replace("  ", " ")
             final = final.strip()
         else:
-            return comm_str
+            return clip
     return final
 
-
 def solve_parser(solve):
+    description_words = ["corners", "edges", "parity"]
     solve_split =  solve.split("\r\n")
+    if len(solve_split) < 2 and "\n" in solve:
+        solve_split = solve.split("\n")
+    for a in solve_split:
+        if a == '':
+            solve_split.remove(a)
     solve = ""
     for comm in solve_split:
         if comm.find("/") != -1:
-            comm = comm[:comm.find("/")]
-        solve += " " + str(alg_maker(comm))
-    return solve
+                comm = comm[:comm.find("/")]
+        if comm not in description_words:
+            solve += " " + str(alg_maker(comm))
+    return (solve, solve_split)
 def main():
     pass
 if __name__ == '__main__':

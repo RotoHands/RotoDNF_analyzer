@@ -16,7 +16,7 @@
         <h1 id="save"></h1>
         <h1 id="add"></h1>
             <script>
-                let ws = new WebSocket("ws://127.0.0.1:56789/");
+                let ws = new WebSocket("ws://127.0.0.1:5678/");
                 ws.onmessage = function (event) {
                     const data_dict = JSON.parse(event.data);
                     console.log(data_dict)
