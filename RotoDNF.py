@@ -267,7 +267,9 @@ async def scramble_cube(Cube, trainer):
     # trainer.data_move_counter = trainer.data[12]
     # trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
     # trainer.last_state_string = get_facelet_strnig(trainer.state_data)
+    await Cube.send_ui("msg","wait for scramble")
     subprocess.Popen(["python", "recordVid.py"])  # record video while solving
+    await Cube.send_ui("msg","scramble")
     Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
     Cube.ws_rec.send(bytearray(str(Cube.scrambleRow), 'utf-8'))
     started = Cube.ws_rec.recv(1024).decode('utf-8')
@@ -375,6 +377,7 @@ async def initCube(websocket, path):
             Cube.wait()
             Cube.start_recording_B = time.time()
             Cube.solveTime = time.time()
+            await Cube.send_ui("msg","memo") # add to websocket
             while(len(trainer.new_moves) == trainer.data_move_counter):
                 await asyncio.sleep(0.1)
             await Cube.send_ui("msg","Solve!")
