@@ -940,6 +940,7 @@ class Cube:
             for stat in reversed(self.solve_stats):
                 if stat["comment"] != "":
                     self.solve_stats[stat["count"]]["comment"] += "mistake from here"
+                    print(self.solve_stats[stat["count"]])
                     break
 
 def keep_comms_unparsed(solve):

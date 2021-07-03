@@ -16,7 +16,7 @@ import socket
 import kociemba
 from dotenv import load_dotenv
 from BLD_solve_parse import parse_solve, parse_smart_cube_solve, parse_url
-
+from BLD_solve_parse import Cube
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
 import json
@@ -29,7 +29,7 @@ import json
 class DNFanalyzer:
     def __init__(self):
         self.facelet_moves = ""
-        self.fail_reason = ""
+        self.fail_reason = "Success"
         self.frame_rate = 0
         self.url = ""
         self.alg = Alg("")
@@ -43,7 +43,8 @@ class DNFanalyzer:
         self.startExeTime = time.time()
         self.exeTime = time.time()
         self.Recon = ""
-        self.secMistake = 0.0
+        self.secMistake = 0
+        self.secMistake_vid = 0
         self.success = False
         self.solveTime = 0
         self.exeMoves = []#[move, time, cornersSolved, edgesSolved, index]
@@ -62,6 +63,8 @@ class DNFanalyzer:
         self.video_time = 0
         self.scramble_moves = []
         self.solve_moves = []
+        self.start_recording_A = None
+        self.start_recording_B = None
 
     def resetCube(self):
         self.solving = False
@@ -74,7 +77,9 @@ class DNFanalyzer:
         self.scrambleApplied = ""
         self.scramble = True
         self.solving = False
-        self.secMistake = 0.0
+        self.fail_reason = "Success"
+        self.secMistake = 0
+        self.secMistake_vid = 0
         self.startMemoTime = time.time()
         self.memoTime = time.time()
         self.startExeTime = time.time()
@@ -137,13 +142,13 @@ def playVid(Cube):#play video of so;ve from the sec of mistake
 
     Cube.ws_play = init_ws(Cube.ws_play_ip, Cube.ws_play_port)
     Cube.ws_play.recv(1024).decode('utf-8')
-    Cube.ws_play.send(bytearray(str("{}:{}:{}:{}".format("%.2f"%Cube.secMistake, Cube.scrambleRow, Cube.frame_rate, Cube.video_time)), 'utf-8'))
+    Cube.ws_play.send(bytearray(str("{}:{}:{}:{}".format("%.2f"%Cube.secMistake_vid, Cube.scrambleRow, Cube.frame_rate, Cube.video_time)), 'utf-8'))
 
 
     data = Cube.ws_play.recv(1024).decode('utf-8')
     if data != "finish":
         data_split = data.split(":")
-        Cube.secMistake = int(float(data_split[0]))
+        # Cube.secMistake = int(float(data_split[0]))
         Cube.fail_reason = data_split[1]
 def getScramble(Cube):# returns Cube object of scramble
 
@@ -262,7 +267,11 @@ async def scramble_cube(Cube, trainer):
     # trainer.data_move_counter = trainer.data[12]
     # trainer.state_data = decData(await trainer.ble_server.read_gatt_char(trainer.chrct_uuid_f2), trainer.decoder)
     # trainer.last_state_string = get_facelet_strnig(trainer.state_data)
-
+    subprocess.Popen(["python", "recordVid.py"])  # record video while solving
+    Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
+    Cube.ws_rec.send(bytearray(str(Cube.scrambleRow), 'utf-8'))
+    started = Cube.ws_rec.recv(1024).decode('utf-8')
+    Cube.start_recording_A = time.time()
     await Cube.send_ui("msg", "scramble")
     await Cube.send_ui("scramble",Cube.scrambleToExe) # add this to websocket
     Cube.scramble_moves = []
@@ -293,7 +302,8 @@ async def scramble_cube(Cube, trainer):
 
 def parse_to_algs_time(stats, exe_moves):
 
-    mistake_sec = -1
+    print(*exe_moves, sep="\n")
+    mistake_sec = 0
     stats[0]["time"] = 0.0
     for i in range (1,len(stats)):
         stats[i]["time"] = exe_moves[stats[i]["count"] - 1][1]
@@ -308,11 +318,14 @@ def parse_to_algs_time(stats, exe_moves):
                 # print(stats[j]["move"])
                 alg_str.append(stats[j]["move"])
             alg_str = " ".join(alg_str)
+            tmp_cube = Cube()
+            if stats[i]["piece"] == "edge" or stats[i]["piece"] == "parity":
+                alg_str = tmp_cube.parse_alg_to_slice_moves(alg_str)
             stats[i]["alg_stats"] = {"time_alg" : time_alg, "exe" : time_exe, "pause" :  time_pause, "alg_str" :  alg_str}
             stats[i]["alg_stats"]["comment"]  = stats[i]["comment"]
             stats[i]["alg_stats"]["piece"] = stats[i]["piece"]
         if "mistake" in stats[i]["comment"]:
-            mistake_sec = exe_moves[stats[i]["count"]][1]
+            mistake_sec = exe_moves[stats[i]["count"] - 1][1]
     algs = []
     for move in stats:
         if "diff_moves" in move:
@@ -323,14 +336,17 @@ def parse_to_algs_time(stats, exe_moves):
 
 def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
         load_dotenv()  # load .env variable
+
         cube = parse_solve(SCRAMBLE, SOLVE)
-        cube.time_solve = CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime
-        cube.name_of_solve = "{} : {}".format(cube.time_solve, time.ctime())
+
         with open ("failure_pkl.pkl", "wb") as f:
             pickle.dump([cube.solve_stats, exe_moves],f)
         algs_time, mistake_sec = parse_to_algs_time(cube.solve_stats, exe_moves)
         if cube.smart_cube:
             cube = parse_smart_cube_solve(cube)
+        cube.time_solve = round(CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime, 2)
+        cube.name_of_solve = "{}({}) : {}".format(cube.time_solve, round(CUBE_SOLVE.memoTime, 2), time.ctime())
+        cube.gen_url()
         solve_str = cube.url
         pyperclip.copy(solve_str)
         return (solve_str, cube.solve_stats,algs_time, mistake_sec)
@@ -353,24 +369,18 @@ async def initCube(websocket, path):
             Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
             Cube.alg.executeAlg()
             Cube.alg.reverseSelf()
-            await scramble_cube(Cube,trainer)
-            await Cube.send_ui("msg","press enter to start memo") # add to websocket
-            Cube.wait()
-            Cube.solveTime = time.time()
-            subprocess.Popen(["python","recordVid.py"])#record video while solving
-            Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
-            Cube.ws_rec.send(bytearray(str(Cube.scrambleRow), 'utf-8'))
-            started = Cube.ws_rec.recv(1024).decode('utf-8')
-            diff = time.time() - Cube.solveTime
 
-            print("time difff : {}".format(diff))
-            await Cube.send_ui("msg","press enter to start solve") # add to websocket
+            await scramble_cube(Cube,trainer) #also starts recording
+            await Cube.send_ui("msg","press space to start memo") # add to websocket
+            Cube.wait()
+            Cube.start_recording_B = time.time()
+            Cube.solveTime = time.time()
             while(len(trainer.new_moves) == trainer.data_move_counter):
                 await asyncio.sleep(0.1)
             await Cube.send_ui("msg","Solve!")
             Cube.memoTime = time.time() - Cube.solveTime
             moveCount = 0
-            Cube.exeTime = time.time() - diff
+            Cube.exeTime = time.time()
             exeMoves = []
             moves = []
 
@@ -385,14 +395,14 @@ async def initCube(websocket, path):
 
                     for move in newMoves:
                         Cube.solve_moves.append(move)
-                        exeMoves.append([move, round((time.time() - Cube.solveTime - diff),2), moveCount])
+                        exeMoves.append([move, round((time.time() - Cube.solveTime),2), moveCount])
                         moveCount += 1
                         moves.append(move)
                         await Cube.send_ui("moves",moves_to_string(moves))
                 # trainer.data_move_counter = trainer.data[12]
 
-            await Cube.send_ui("msg","finish")
             Cube.exeTime = time.time()- Cube.exeTime
+            await Cube.send_ui("msg","finish")
             Cube.ws_rec.send(bytearray('STOP', 'utf-8'))
             Cube.frame_rate = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
             Cube.video_time = round(float(Cube.ws_rec.recv(1024).decode('utf-8')))
@@ -403,12 +413,20 @@ async def initCube(websocket, path):
 
             solve_str, solve_stats, algs_time, mistake_sec = parse_solve_main(scramble, solve, exeMoves,Cube)
             Cube.secMistake = mistake_sec
+            Cube.secMistake_vid = round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)
+            playVid(Cube)
+            time.sleep(1)
+            print("mistake : {}, mistake_sec: {}".format(Cube.secMistake, mistake_sec))
+            changed_path = os.path.join(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos', "{}_{}({})_{}_{}.mkv".format(Cube.scrambleRow, round(Cube.memoTime + Cube.exeTime, 2), round(Cube.memoTime), "" if Cube.secMistake == 0 else "{}-({})".format("mistake", round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)), Cube.fail_reason))
+            os.rename(openPath, changed_path)
+
+
+
             with open ("solves.pkl", "rb") as f:
                 solves = pickle.load(f)
-                solves.append({"date" : datetime.now(),"solve_time" : Cube.memoTime + Cube.exeTime,"memo_time" :  Cube.memoTime, "exe_time" :  Cube.exeTime, "fail_reason" : Cube.fail_reason,"algs_time" : algs_time,  "video_path" : openPath, "scramble" : Cube.scrambleToExe, "solve" :  solve_str, "stats" : solve_stats, "mistake_sec" : mistake_sec})
+                solves.append({"date" : datetime.now(),"solve_time" : Cube.memoTime + Cube.exeTime,"memo_time" :  Cube.memoTime, "exe_time" :  Cube.exeTime, "fail_reason" : Cube.fail_reason,"algs_time" : algs_time,  "video_path" : changed_path, "scramble" : Cube.scrambleToExe, "solve" :  solve_str, "stats" : solve_stats, "mistake_sec" : mistake_sec})
             with open ("solves.pkl", "wb") as f:
                 pickle.dump(solves, f)
-            playVid(Cube)
 
 def main():
     start_server = websockets.serve(initCube, "127.0.0.1", 5678)

@@ -21,6 +21,7 @@ def recordVid():
     savePath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos',vidNum, ".mkv")
     print(savePath)
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap.set(15, -8.0)
     out = cv2.VideoWriter(savePath, fourcc, 30.0, (640, 480))
     session_socket.send(bytearray("Started", 'utf-8'))
     session_socket.setblocking(False)
@@ -36,6 +37,7 @@ def recordVid():
         except Exception as e:
             pass
     cv2.destroyAllWindows()
+    print("here {}".format(str(count_frames/(time.time()-a))))
     session_socket.send(bytearray(str(count_frames/(time.time()-a)), 'utf-8'))
     session_socket.send(bytearray(str((time.time()-a)), 'utf-8'))
 

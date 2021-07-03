@@ -52,7 +52,7 @@ def toHexVal(value):
     return valhex
 
 def callback(sender: int, data: bytearray):
-    print(parseData(data))
+    parseData(data)
 async def check():
     while True:
         pass

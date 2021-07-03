@@ -37,8 +37,8 @@ def playVideo():
         if(ret == True):
             # print(cap1.get(cv2.CAP_PROP_POS_MSEC)
             res = cv2.resize(frame, (640,480))
-            cv2.imshow('m: memo, e: exe, t: trace, n:no',res)
-            cv2.moveWindow('m: memo, e: exe, t: trace, n:no', 210, 20)
+            cv2.imshow('m: memo, e: exe, t: trace, s:Success, mistake:{}'.format(sec_mistake),res)
+            cv2.moveWindow('m: memo, e: exe, t: trace, s:Success, mistake:{}'.format(sec_mistake), 210, 20)
 
             if cv2.waitKey(30)& 0xFF == ord(' '):
                 break
@@ -78,10 +78,10 @@ def playVideo():
                     corrected = True
                     print("exe_errrrror")
                     break
-            if (keyboard.is_pressed('n') == True):
+            if (keyboard.is_pressed('s') == True):
                 n += 1
                 if (n >= times):
-                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "no_error"),'utf-8'))
+                    session_socket.send(bytearray("{}:{}".format(str(int(cv2.CAP_PROP_POS_MSEC/1000)), "Success"),'utf-8'))
                     corrected = True
                     break
 

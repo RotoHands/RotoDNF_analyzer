@@ -1,4 +1,5 @@
 import pickle
+import os
 def load_solves():
     with open("solves.pkl", "wb") as f:
         pickle.dump([],f)
@@ -41,7 +42,7 @@ def parse_to_algs_time(stats, exe_moves):
 def main():
     with open("solves.pkl", "rb") as f:
         data = pickle.load(f)
-        print(data)
+        print(*data, sep="\n")
         # stats = data[0]
         # exe_moves = data[1]
 
@@ -52,5 +53,8 @@ def main():
     #     print(alg)
     # print(mistake_sec)
 
+    # a = r"C:\\Users\\rotem\\PycharmProjects\\Roto_DNF_Analyzer\\Videos\\208._2021_7_3-73.19_mistake-exe_error_58.82.mkv"
+    # b = r"C:\\Users\\rotem\\PycharmProjects\\Roto_DNF_Analyzer\\Videos\\208.mkv"
+    # os.rename(b,a)
 if __name__ == '__main__':
   main()
