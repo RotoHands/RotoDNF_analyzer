@@ -75,7 +75,7 @@ class DNFanalyzer:
         self.alg.reset()
         self.moveNumber = 0
         self.exeMoves = []
-        self.scrambleToExe = getScramble(self)
+        self.scrambleToExe = getScramble()
         self.scrambleApplied = ""
         self.scramble = True
         self.solving = False
@@ -152,7 +152,7 @@ def playVid(Cube):#play video of so;ve from the sec of mistake
         data_split = data.split(":")
         # Cube.secMistake = int(float(data_split[0]))
         Cube.fail_reason = data_split[1]
-def getScramble(Cube):# returns Cube object of scramble
+def getScramble2(Cube):# returns Cube object of scramble
 
     wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
     ws = wb["RotoStats"]
@@ -164,7 +164,15 @@ def getScramble(Cube):# returns Cube object of scramble
     Cube.scrambleRow = i
     Cube.scrambleApplied = ws.cell(i,1).value
     return ws.cell(i,1).value
-
+def getScramble():
+    with open ("scrambles.txt", "r") as f:
+        data = f.read().split("\n")
+        scramble =  data[0]
+    del(data[0])
+    with open ("scrambles.txt", "w") as f:
+        for d in data:
+            f.write("{}\n".format(d))
+    return scramble
 def saveSolve(Cube):#save results to excel
     memo = Cube.memoTime
     exce = Cube.exeTime
@@ -442,6 +450,7 @@ async def initCube(websocket, path):
                 pickle.dump(solves, f)
 
 def main():
+
     start_server = websockets.serve(initCube, "127.0.0.1", 5678)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
