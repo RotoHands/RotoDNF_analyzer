@@ -7,6 +7,7 @@ import pickle
 from datetime import datetime
 from  algClass import Alg
 import os
+import re
 import subprocess
 import time
 import asyncio
@@ -349,8 +350,10 @@ def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
             cube = parse_smart_cube_solve(cube)
         cube.time_solve = round(CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime, 2)
         cube.name_of_solve = "{}({}) : {}".format(cube.time_solve, round(CUBE_SOLVE.memoTime, 2), time.ctime())
-        cube.gen_url()
         solve_str = cube.url
+        solve_str = re.sub('&title=[^&]*', '&title={}'.format(cube.name_of_solve), solve_str)
+        solve_str = re.sub('&time=[^&]*', '&title={}'.format(cube.time_solve), solve_str)
+
         pyperclip.copy(solve_str)
         return (solve_str, cube.solve_stats,algs_time, mistake_sec)
 

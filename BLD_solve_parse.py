@@ -609,7 +609,7 @@ class Cube:
                         self.url += "// {} %0A".format(move["comment"])
                     else:
                         self.url += "// {} %0A".format(move["comment"])
-
+        print(self.url)
     def perm_to_string(self, perm):
         """
         converts permutation object to str
