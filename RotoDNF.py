@@ -75,7 +75,7 @@ class DNFanalyzer:
         self.alg.reset()
         self.moveNumber = 0
         self.exeMoves = []
-        self.scrambleToExe = getScramble()
+        self.scrambleToExe, self.scrambleRow = getScramble()
         self.scrambleApplied = ""
         self.scramble = True
         self.solving = False
@@ -172,8 +172,15 @@ def getScramble():
     with open ("scrambles.txt", "w") as f:
         for d in data:
             f.write("{}\n".format(d))
-    return scramble
-def saveSolve(Cube):#save results to excel
+    return (scramble.split(")")[1], scramble.split(")")[0])
+
+def save_solve(success, memo, exe, exe_neto, exe_pause, mistake_sec, mistake_sec_to_end, scrmable, solve_str, fail_reason ):
+    with open("results.csv", "r") as f:
+        data = f.read()
+    data += "{};{};{};{};{};{};{};{};{};{};{};{};{}"
+
+
+def saveSolve2(Cube):#save results to excel
     memo = Cube.memoTime
     exce = Cube.exeTime
     all = memo + exce
@@ -346,6 +353,7 @@ def parse_to_algs_time(stats, exe_moves):
     return (algs, mistake_sec)
 
 def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
+
         load_dotenv()  # load .env variable
 
         cube = parse_solve(SCRAMBLE, SOLVE)
@@ -369,9 +377,9 @@ def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
         solve_str = cube.url
         solve_str = re.sub('&title=[^&]*', '&title={}'.format(cube.name_of_solve), solve_str)
         solve_str = re.sub('&time=[^&]*', '&time={}'.format(cube.time_solve), solve_str)
-
+        success = True if cube.solve_stats[-1]['cor'] == 8 and cube.solve_stats[-1]['ed'] == 12 else False
         pyperclip.copy(solve_str)
-        return (solve_str, cube.solve_stats,algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end)
+        return (solve_str, cube.solve_stats,algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end, success)
 
 async def initCube(websocket, path):
 
@@ -391,7 +399,6 @@ async def initCube(websocket, path):
             Cube.alg.movesToExecute = Cube.scrambleToExe  # put scramble moves ready to execute
             Cube.alg.executeAlg()
             Cube.alg.reverseSelf()
-
             await scramble_cube(Cube,trainer) #also starts recording
             await Cube.send_ui("msg","press space to start memo") # add to websocket
             Cube.wait()
@@ -434,7 +441,7 @@ async def initCube(websocket, path):
             solve = " ".join(Cube.solve_moves)
             openPath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos', str(Cube.scramble_row_original), ".mkv")
 
-            solve_str, solve_stats, algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end = parse_solve_main(scramble, solve, exeMoves,Cube)
+            solve_str, solve_stats, algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end, success = parse_solve_main(scramble, solve, exeMoves,Cube)
             Cube.secMistake = mistake_sec
             Cube.secMistake_vid = 0 if mistake_sec == 0 else round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)
             playVid(Cube)
@@ -445,7 +452,7 @@ async def initCube(websocket, path):
 
             with open ("solves.pkl", "rb") as f:
                 solves = pickle.load(f)
-                solves.append({"date" : datetime.now(),"solve_time" : Cube.memoTime + Cube.exeTime,"memo_time" :  Cube.memoTime, "exe_time" :  Cube.exeTime, "exe_neto" : sum_exe, "pause_time" : sum_pause,"mistake_sec_to_end" : mistake_sec_to_end,  "fail_reason" : Cube.fail_reason,"algs_time" : algs_time,  "video_path" : changed_path, "scramble" : Cube.scrambleToExe, "solve" :  solve_str, "stats" : solve_stats, "mistake_sec" : mistake_sec})
+                solves.append({"date" : datetime.now(), 'success' : success,"solve_time" : Cube.memoTime + Cube.exeTime,"memo_time" :  Cube.memoTime, "exe_time" :  Cube.exeTime, "exe_neto" : sum_exe, "pause_time" : sum_pause,"mistake_sec_to_end" : mistake_sec_to_end,  "fail_reason" : Cube.fail_reason,"algs_time" : algs_time,  "video_path" : changed_path, "scramble" : Cube.scrambleToExe, "solve" :  solve_str, "stats" : solve_stats, "mistake_sec" : mistake_sec})
             with open ("solves.pkl", "wb") as f:
                 pickle.dump(solves, f)
 

@@ -42,8 +42,17 @@ def parse_to_algs_time(stats, exe_moves):
 def main():
     with open("solves.pkl", "rb") as f:
         data = pickle.load(f)
-        print(*data, sep="\n")
-        # stats = data[0]
+        print(data[-1]['stats'][-1]['cor'])
+
+    with open("scrambles.txt", "r") as f:
+        data = f.read().split("\n")
+    final_data = ""
+    for i in range(len(data)) :
+        final_data += "{}) {}\n".format(i,data[i])
+    with open("scrambles.txt", "w") as f:
+        f.write(final_data)
+
+    # stats = data[0]
         # exe_moves = data[1]
 
         # print(*exe_moves, sep="\n")
