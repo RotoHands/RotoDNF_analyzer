@@ -174,11 +174,23 @@ def getScramble():
             f.write("{}\n".format(d))
     return (scramble.split(")")[1], scramble.split(")")[0])
 
-def save_solve(success, memo, exe, exe_neto, exe_pause, mistake_sec, mistake_sec_to_end, scrmable, solve_str, fail_reason ):
-    with open("results.csv", "r") as f:
-        data = f.read()
-    data += "{};{};{};{};{};{};{};{};{};{};{};{};{}"
-
+def save_solve(scramble_row, success, memo, exe, exe_neto, exe_pause, mistake_sec, mistake_sec_to_end, scrmable, solve_str, fail_reason ,video_path, algs):
+    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
+    ws = wb["RotoStats"]
+    row = scramble_row
+    ws.cell(row, 1).value = round(memo + exe, 2)
+    ws.cell(row, 2).value = round(memo, 2)
+    ws.cell(row, 3).value = round(exe, 2)
+    ws.cell(row, 4).value = success
+    ws.cell(row, 5).value = algs
+    ws.cell(row, 6).value = round(exe_pause/(exe_neto + exe_pause), 2)
+    ws.cell(row, 7).value = round(mistake_sec, 2)
+    ws.cell(row, 8).value = fail_reason
+    ws.cell(row, 9).value = scrmable
+    ws.cell(row, 10).value = solve_str
+    ws.cell(row, 11).value = video_path
+    pyperclip.copy(solve_str)
+    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
 
 def saveSolve2(Cube):#save results to excel
     memo = Cube.memoTime
