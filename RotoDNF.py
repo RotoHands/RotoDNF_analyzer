@@ -393,11 +393,12 @@ def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
             cube = parse_smart_cube_solve(cube)
         cube.time_solve = round(CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime, 2)
         mistake_sec_to_end = round(cube.time_solve - sum_exe - sum_pause - CUBE_SOLVE.memoTime, 2)
-        cube.name_of_solve = "{}({};{};{}%25{}) : {}".format(cube.time_solve,round(CUBE_SOLVE.memoTime, 2), round( CUBE_SOLVE.exeTime, 2), round(sum_exe/(sum_exe + sum_pause),2)*100,";{}".format(mistake_sec) if mistake_sec != 0 else "",time.ctime())
+        success = True if cube.solve_stats[-1]['cor'] == 8 and cube.solve_stats[-1]['ed'] == 12 else False
+
+        cube.name_of_solve = "{}{}({};{};{}%25{}) : {}".format("DNF - " if not success else "", cube.time_solve,round(CUBE_SOLVE.memoTime, 2), round( CUBE_SOLVE.exeTime, 2), round(sum_exe/(sum_exe + sum_pause),2)*100,";{}".format(mistake_sec) if mistake_sec != 0 else "",time.ctime())
         solve_str = cube.url
         solve_str = re.sub('&title=[^&]*', '&title={}'.format(cube.name_of_solve), solve_str)
         solve_str = re.sub('&time=[^&]*', '&time={}'.format(cube.time_solve), solve_str)
-        success = True if cube.solve_stats[-1]['cor'] == 8 and cube.solve_stats[-1]['ed'] == 12 else False
         pyperclip.copy(solve_str)
         return (solve_str, cube.solve_stats,algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end, success)
 
