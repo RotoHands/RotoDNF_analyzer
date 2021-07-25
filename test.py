@@ -54,8 +54,6 @@ def main():
     #     print(alg)
     # print(mistake_sec)
 
-    # a = r"C:\\Users\\rotem\\PycharmProjects\\Roto_DNF_Analyzer\\Videos\\208._2021_7_3-73.19_mistake-exe_error_58.82.mkv"
-    # b = r"C:\\Users\\rotem\\PycharmProjects\\Roto_DNF_Analyzer\\Videos\\208.mkv"
-    # os.rename(b,a)
+
 if __name__ == '__main__':
   main()
