@@ -21,7 +21,7 @@ def recordVid():
     savePath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos',vidNum, ".mkv")
     print(savePath)
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    cap.set(15, -8.0)
+    cap.set(15, -7.0)
     out = cv2.VideoWriter(savePath, fourcc, 30.0, (640, 480))
     session_socket.send(bytearray("Started", 'utf-8'))
     session_socket.setblocking(False)

@@ -183,20 +183,20 @@ def save_solve(scramble_row, success, memo, exe, exe_neto, exe_pause, mistake_se
             break
         else:
             row += 1
-    print("{} : {} : {}".format(exe_pause, exe_neto, round(exe_neto/(exe_neto + exe_pause), 2)*100))
     ws.cell(row, 1).value = round(memo + exe, 2)
     ws.cell(row, 2).value = round(memo, 2)
     ws.cell(row, 3).value = round(exe, 2)
     ws.cell(row, 4).value = success
     ws.cell(row, 5).value = algs
     ws.cell(row, 6).value = round(exe_neto/(exe_neto + exe_pause), 2)*100
-    ws.cell(row, 7).value = round(mistake_sec, 2)
-    ws.cell(row, 8).value = fail_reason
-    ws.cell(row, 9).value = scrmable
-    ws.cell(row, 10).value = solve_str
+    ws.cell(row, 8).value = round(mistake_sec, 2)
+    ws.cell(row, 9).value = fail_reason
+    ws.cell(row, 10).value = scrmable
+    ws.cell(row, 11).value = solve_str
     print(video_path)
-    ws.cell(row, 11).value = "=HYPERLINK(\"{}\", \"Solve_Link_{}\")".format(video_path, scramble_row)
-    ws.cell(row, 12).value = video_path
+    ws.cell(row, 12).value = "=HYPERLINK(\"{}\", \"Solve_Link_{}\")".format(video_path, scramble_row)
+    ws.cell(row, 7).value = time.ctime()
+
     pyperclip.copy(solve_str)
     wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
 
@@ -342,7 +342,7 @@ async def scramble_cube(Cube, trainer):
 def parse_to_algs_time(stats, exe_moves):
 
     mistake_sec = 0
-    stats[0]["time"] = 0.0
+    stats[0]["time"] = exe_moves[0][1]
     for i in range (1,len(stats)):
         stats[i]["time"] = exe_moves[stats[i]["count"] - 1][1]
         if "diff_moves" in stats[i]:
@@ -394,8 +394,12 @@ def parse_solve_main(SCRAMBLE, SOLVE, exe_moves,CUBE_SOLVE):
         cube.time_solve = round(CUBE_SOLVE.memoTime + CUBE_SOLVE.exeTime, 2)
         mistake_sec_to_end = round(cube.time_solve - sum_exe - sum_pause - CUBE_SOLVE.memoTime, 2)
         success = True if cube.solve_stats[-1]['cor'] == 8 and cube.solve_stats[-1]['ed'] == 12 else False
-
-        cube.name_of_solve = "{}{}({};{};{}%25{}) : {}".format("DNF - " if not success else "", cube.time_solve,round(CUBE_SOLVE.memoTime, 2), round( CUBE_SOLVE.exeTime, 2), round(sum_exe/(sum_exe + sum_pause),2)*100,";{}".format(mistake_sec) if mistake_sec != 0 else "",time.ctime())
+        try:
+            flude = round(sum_exe/(sum_exe + sum_pause)*100,2)
+        except:
+            print("fail flude")
+            flude = 0
+        cube.name_of_solve = "{}{}({};{};{}%25{}) : {}".format("DNF - " if not success else "", cube.time_solve,round(CUBE_SOLVE.memoTime, 2), round( CUBE_SOLVE.exeTime, 2), flude,";{}".format(mistake_sec) if mistake_sec != 0 else "",time.ctime())
         solve_str = cube.url
         solve_str = re.sub('&title=[^&]*', '&title={}'.format(cube.name_of_solve), solve_str)
         solve_str = re.sub('&time=[^&]*', '&time={}'.format(cube.time_solve), solve_str)
