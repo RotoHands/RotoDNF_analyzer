@@ -656,6 +656,8 @@ class Cube:
         returns special cases (flip, twist) or original
         """
         edges = False
+        print("here comm : {} ".format(comm))
+
         if len(comm[0]) == 2:
             edges = True
         if self.string_permutation(comm[0], comm[1]):
@@ -1029,6 +1031,7 @@ def parse_solve(scramble, solve_attampt):
     current_alg = []
     start = count
     count_moves_from_start = 0
+    last_solved_cube_state = cube.current_perm
     for i in range (start, len(move_in_solve)):
         original_move = move_in_solve[i]
         current_alg.append(original_move)
@@ -1038,11 +1041,15 @@ def parse_solve(scramble, solve_attampt):
         solved_edges =  cube.count_solve_edges()
         solved_cor = cube.count_solved_cor()
         diff = cube.diff_states(cube.perm_to_string(cube.current_perm))
+        current_perm = cube.current_perm
         if diff > cube.diff_to_solved_state and (count - max_piece_place >= 4):
+            print("\n\nlast_solved : {} \n current_perm : {} \n".format(last_solved_cube_state, current_perm))
+            last_solved_cube_state = cube.current_perm
             temp_count = count - max_piece_place
             max_piece_place = count
             cube.last_solved_pieces = cube.diff_solved_state()
             comm, piece_type = cube.parse_solved_to_comm()
+            print(piece_type)
             if len(comm) > 3 and temp_count < 8:
                  cube.solve_stats.append(
                      {"count": count, "move": original_move, "ed": solved_edges, "cor": solved_cor, "comment": "",
@@ -1088,7 +1095,8 @@ def parse_solve(scramble, solve_attampt):
             cube.solve_stats.append({"count" : count,"move": original_move,"ed" : solved_edges,"cor" :  solved_cor, "comment" : "" , "diff" : diff})
 
     if current_alg:
-         cube.algs_executed.append([" ".join(current_alg), piece_type])
+        print("current alg : {} ".format(current_alg))
+        cube.algs_executed.append([" ".join(current_alg), piece_type])
 
     cube.find_mistake()
     # print(*cube.solve_stats, sep="\n")
