@@ -6,6 +6,7 @@ import websockets
 import pickle
 from datetime import datetime
 from  algClass import Alg
+from pathlib import Path
 import os
 import re
 import subprocess
@@ -154,13 +155,14 @@ def playVid(Cube):#play video of so;ve from the sec of mistake
         Cube.fail_reason = data_split[1]
 def getScramble2(Cube):# returns Cube object of scramble
 
-    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
+    excel_path = os.path.join(Path(os.getcwd()).parent.absolute(), "RotoDNFStats.xlsx")
+    wb = openpyxl.load_workbook(excel_path, data_only="yes")
     ws = wb["RotoStats"]
     i=1
     while(ws.cell(i,2).value != "no"):
         i+=1
     ws.cell(i,2).value = "yes"
-    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
+    wb.save(excel_path)
     Cube.scrambleRow = i
     Cube.scrambleApplied = ws.cell(i,1).value
     return ws.cell(i,1).value
@@ -175,7 +177,8 @@ def getScramble():
     return (scramble.split(")")[1], scramble.split(")")[0])
 
 def save_solve(scramble_row, success, memo, exe, exe_neto, exe_pause, mistake_sec, scrmable, solve_str, fail_reason ,video_path, algs):
-    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
+    excel_path = os.path.join(os.getcwd(), "RotoDNFStats.xlsx")
+    wb = openpyxl.load_workbook(excel_path, data_only="yes")
     ws = wb["RotoStats"]
     row = 2
     while True:
@@ -198,9 +201,10 @@ def save_solve(scramble_row, success, memo, exe, exe_neto, exe_pause, mistake_se
     ws.cell(row, 7).value = time.ctime()
 
     pyperclip.copy(solve_str)
-    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
+    wb.save(excel_path)
 
 def saveSolve2(Cube):#save results to excel
+    excel_path = os.path.join(os.getcwd(), "RotoDNFStats.xlsx")
     memo = Cube.memoTime
     exce = Cube.exeTime
     all = memo + exce
@@ -212,7 +216,7 @@ def saveSolve2(Cube):#save results to excel
         succsses = "no"
     row = Cube.scrambleRow
 
-    wb = openpyxl.load_workbook(os.getcwd() + "\RotoDNFStats.xlsx", data_only="yes")
+    wb = openpyxl.load_workbook(os.path.join(os.getcwd(), "RotoDNFStats.xlsx"), data_only="yes")
     ws = wb["RotoStats"]
     strRow = str(Cube.scrambleRow)
     ws.cell(row, 3).value = round(memo,2)
@@ -226,9 +230,8 @@ def saveSolve2(Cube):#save results to excel
     ws.cell(row,11).value = Cube.fail_reason
     Cube.url = ws.cell(row,10).value
     pyperclip.copy(Cube.url)
-    #ws.cell(row, 8).value = "=HYPERLINK(" + "\"C:\Python\PythonWork\BLD\RotoBLD\RotoDNF\\videos\solve" + strRow +".avi\""+", "+"\"solve"+strRow+"\")"
     ws.cell(row, 9).value =  Cube.solution
-    wb.save(os.getcwd() + "\RotoDNFStats.xlsx")
+    wb.save(excel_path)
 def takeCorners(elem):
     return elem[2]
 
@@ -439,6 +442,7 @@ async def initCube(websocket, path):
     Cube.alg.reverseSelf()
     trainer = Trainer()
     trainer.ble_server = BleakClient(trainer.rubiks1_addr)
+
     async with BleakClient(trainer.rubiks1_addr, timeout=20.0) as trainer.ble_server:
         if trainer.rubiks == True:
             await trainer.ble_server.start_notify(14, trainer.callback)
@@ -487,8 +491,7 @@ async def initCube(websocket, path):
 
             scramble = Cube.scrambleToExe
             solve = " ".join(Cube.solve_moves)
-            openPath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos', str(Cube.scramble_row_original), ".mkv")
-
+            openPath = os.path.join(Path(os.getcwd()).parent.absolute(), "Videos","{}{}".format(str(Cube.scramble_row_original), ".mkv"))
             solve_str, solve_stats, algs_time, mistake_sec, sum_exe, sum_pause, mistake_sec_to_end, success = parse_solve_main(scramble, solve, exeMoves,Cube)
             solve_desc = solve_description(algs_time) if success else None
 
@@ -497,7 +500,7 @@ async def initCube(websocket, path):
             playVid(Cube)
 
             time.sleep(1)
-            changed_path = os.path.join(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos', "{}_{}({})_{}{}.mkv".format(Cube.scramble_row_original, round(Cube.memoTime + Cube.exeTime, 2), round(Cube.memoTime), "" if Cube.secMistake == 0 else "{}-({})".format("_mistake", round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)), Cube.fail_reason))
+            changed_path = os.path.join(Path(os.getcwd()).parent.absolute(), "Videos",   "{}_{}({})_{}{}.mkv".format(Cube.scramble_row_original, round(Cube.memoTime + Cube.exeTime, 2), round(Cube.memoTime), "" if Cube.secMistake == 0 else "{}-({})".format("_mistake", round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)), Cube.fail_reason))
             os.rename(openPath, changed_path)
 
             with open ("solves.pkl", "rb") as f:

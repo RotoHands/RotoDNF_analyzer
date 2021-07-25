@@ -8,6 +8,8 @@ import websockets
 IP = '127.0.0.1'
 PORT = 12345
 import asyncio
+import os
+from pathlib import Path
 
 def recordVid():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -18,7 +20,8 @@ def recordVid():
     data = session_socket.recv(1024).decode('utf-8')
     vidNum = data
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    savePath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos',vidNum, ".mkv")
+
+    savePath = os.path.join(Path(os.getcwd()).parent.absolute(),"Videos","{}{}".format(vidNum, ".mkv"))
     print(savePath)
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     cap.set(15, -7.0)

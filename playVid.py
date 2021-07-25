@@ -1,6 +1,8 @@
 import cv2
 import keyboard
 import socket
+import os
+from pathlib import Path
 
 def playVideo():
     IP = "127.0.0.1"
@@ -19,7 +21,7 @@ def playVideo():
     with open("log.txt", "w") as f:
         f.write("{},{} : {},{} : {},{} : {},{}".format(video_time, type(video_time), sec_mistake, type(sec_mistake), row, type(row) , frame_rate , type(frame_rate)))
 
-    openPath = "{}\\{}{}".format(r'C:\Users\rotem\PycharmProjects\Roto_DNF_Analyzer\Videos',str(row), ".mkv")
+    openPath = os.path.join(Path(os.getcwd()).parent.absolute(),"Videos","{}{}".format(str(row), ".mkv"))
     cap1 = cv2.VideoCapture(openPath)
     cap1.set(cv2.CAP_PROP_POS_MSEC, round(sec_mistake*1000-500,2))
     times = 2
