@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from decode_gan import aes128, decData
 from bleak import BleakClient
 import openpyxl
@@ -105,7 +106,8 @@ class DNFanalyzer:
             pass
 
 def init_ws(ip, port):
-    time.sleep(2)
+    time.sleep(5)
+    print("trying ro connect")
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((ip, port))
     return client
@@ -141,7 +143,7 @@ def url(Cube, scramble):#gen url of solve to algcubing
 
 def playVid(Cube):#play video of so;ve from the sec of mistake
 
-    subprocess.Popen(["python", 'playVid.py'])
+    subprocess.Popen(["python3", 'playVid.py'])
 
     Cube.ws_play = init_ws(Cube.ws_play_ip, Cube.ws_play_port)
     Cube.ws_play.recv(1024).decode('utf-8')
@@ -308,7 +310,7 @@ async def scramble_cube(Cube, trainer):
     # trainer.last_state_string = get_facelet_strnig(trainer.state_data)
     await Cube.send_ui("msg","wait for scramble")
     Cube.scramble_row_original = Cube.scrambleRow
-    subprocess.Popen(["python", "recordVid.py"])  # record video while solving
+    subprocess.Popen(["sudo", "./recordVid.py"])  # record video while solving
     await Cube.send_ui("msg","scramble")
     Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
     Cube.ws_rec.send(bytearray(str(Cube.scramble_row_original), 'utf-8'))
@@ -512,6 +514,7 @@ async def initCube(websocket, path):
 
 
 def main1():
+    subprocess.Popen(["python3","/home/pi/Cubing/BLD_trainer/RotoDNF_analyzer/recordVid.py"])  # record video while solving
 
     start_server = websockets.serve(initCube, "127.0.0.1", 5678)
     loop = asyncio.get_event_loop()

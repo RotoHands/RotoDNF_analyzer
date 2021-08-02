@@ -1,19 +1,20 @@
-import cv2
+#!/usr/bin/python3
 import time
+import sys
 import cv2
-import ffmpeg
 import socket
-import datetime
-import websockets
 IP = '127.0.0.1'
 PORT = 12345
-import asyncio
 import os
 from pathlib import Path
 
 def recordVid():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((IP, PORT))
+    print("opening connection ")
+    print("cv2 version {}".format(cv2.__version__))
+    print("python version:\n {} \n {} ".format(sys.prefix, sys.base_prefix))
+
     server.listen(1)
 
     session_socket, client_socket_name = server.accept()
