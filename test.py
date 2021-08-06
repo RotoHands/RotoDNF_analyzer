@@ -1,5 +1,13 @@
+#!/usr/bin/python3.7
+
 import pickle
+import pyperclip
 import os
+import sys
+from pyvirtualdisplay import Display
+from selenium import webdriver
+
+
 def load_solves():
     with open("solves.pkl", "wb") as f:
         pickle.dump([],f)
@@ -40,9 +48,11 @@ def parse_to_algs_time(stats, exe_moves):
 
 
 def main():
-    with open("solves.pkl", "rb") as f:
-        data = pickle.load(f)
-        print(*data[-1]["algs_time"], sep="\n")
+    #with open("solves.pkl", "rb") as f:
+     #   data = pickle.load(f)
+      #  print(*data[-1]["algs_time"], sep="\n")
+
+    pyperclip.copy(sys.argv[1])
 
     # stats = data[0]
         # exe_moves = data[1]

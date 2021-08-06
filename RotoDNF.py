@@ -23,10 +23,7 @@ from BLD_solve_parse import Cube
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
 import json
-from tkinter import Tk
-
-
-
+from selenium import webdriver
 
 
 class DNFanalyzer:
@@ -181,13 +178,9 @@ def copy_str(string):
     if os.name == 'nt':
         pyperclip.copy(string)
     else:
-        r = Tk()
-        r.withdraw()
-        r.clipboard_clear()
-        r.clipboard_clear()
-        print(string)
-        r.clipboard_append(string)
-        r.destroy()
+        subprocess.Popen(["python3", "./test.py", "{}".format(string)])
+
+
 def save_solve(scramble_row, success, memo, exe, exe_neto, exe_pause, mistake_sec, scrmable, solve_str, fail_reason ,video_path, algs):
     excel_path = os.path.join(os.getcwd(), "RotoDNFStats.xlsx")
     wb = openpyxl.load_workbook(excel_path, data_only="yes")
@@ -513,9 +506,9 @@ async def initCube(websocket, path):
 
             Cube.secMistake = mistake_sec
             Cube.secMistake_vid = 0 if mistake_sec == 0 else round(Cube.start_recording_B - Cube.start_recording_A + Cube.secMistake, 2)
-            if Cube.secMistake != 0:
+            if success == False:
                 if os.name != "nt":
-                    Cube.fail_reason = input("Enter reason for failure : T-trace, E-exe, M-memo")
+                    Cube.fail_reason = input("Enter reason for failure : T-trace, E-exe, M-memo\n")
                     if Cube.fail_reason == "M":
                         Cube.fail_reason = "memo_forgot_error"
                     if Cube.fail_reason == "T":
