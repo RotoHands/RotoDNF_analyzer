@@ -48,9 +48,9 @@ def parse_to_algs_time(stats, exe_moves):
 
 
 def main():
-    #with open("solves.pkl", "rb") as f:
-     #   data = pickle.load(f)
-      #  print(*data[-1]["algs_time"], sep="\n")
+    with open("solves.pkl", "rb") as f:
+        data = pickle.load(f)
+        print(*data[-1]["algs_time"], sep="\n")
 
     pyperclip.copy(sys.argv[1])
 

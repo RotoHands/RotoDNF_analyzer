@@ -23,7 +23,6 @@ from BLD_solve_parse import Cube
 ### Setup!!! ###
 exeOrder = "EdgesCorners"
 import json
-from selenium import webdriver
 
 
 class DNFanalyzer:
@@ -140,7 +139,7 @@ def url(Cube, scramble):#gen url of solve to algcubing
 
 def playVid(Cube):#play video of so;ve from the sec of mistake
 
-    subprocess.Popen(["python3", 'playVid.py'])
+    subprocess.Popen(["python", 'playVid.py'])
 
     Cube.ws_play = init_ws(Cube.ws_play_ip, Cube.ws_play_port)
     Cube.ws_play.recv(1024).decode('utf-8')
@@ -313,7 +312,7 @@ async def scramble_cube(Cube, trainer):
     # trainer.last_state_string = get_facelet_strnig(trainer.state_data)
     await Cube.send_ui("msg","wait for scramble")
     Cube.scramble_row_original = Cube.scrambleRow
-    subprocess.Popen(["python3", "./recordVid.py"])  # record video while solving
+    subprocess.Popen(["python", "./recordVid.py"])  # record video while solving
     await Cube.send_ui("msg","scramble")
     time.sleep(3)
 
@@ -321,7 +320,7 @@ async def scramble_cube(Cube, trainer):
         Cube.ws_rec = init_ws(Cube.ws_rec_ip, Cube.ws_rec_port)
         Cube.ws_rec.send(bytearray(str(Cube.scramble_row_original), 'utf-8'))
         started = Cube.ws_rec.recv(1024).decode('utf-8')
-    Cube.start_recording_A = time.time()
+    Cube.start_recfording_A = time.time()
     await Cube.send_ui("msg", "scramble")
     await Cube.send_ui("scramble",Cube.scrambleToExe) # add this to websocket
     Cube.scramble_moves = []
